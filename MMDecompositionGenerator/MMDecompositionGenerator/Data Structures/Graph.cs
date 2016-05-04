@@ -85,5 +85,23 @@ namespace MMDecompositionGenerator.Data_Structures
             }
             return g;
         }
+        public static Graph FromPartition(Graph g, List<Vertex> A)
+        {
+            var newGraph = new Graph();
+
+            foreach (KeyValuePair<int, Vertex> p in g.Vertices)
+            {
+                newGraph.Vertices.Add(p.Key, new Vertex(p.Key));
+            }
+            foreach (KeyValuePair<Tuple<int, int>, Edge> p in g.Edges)
+            {
+                var e = p.Value;
+                if (A.Contains(e.u) != A.Contains(e.v))
+                    newGraph.ConnectVertices(e.u, e.v);
+            }
+
+            return newGraph;
+
+        }
     }
 }
