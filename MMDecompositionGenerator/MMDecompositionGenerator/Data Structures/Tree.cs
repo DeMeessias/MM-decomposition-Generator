@@ -117,6 +117,21 @@ namespace MMDecompositionGenerator.Data_Structures
                 e.VertexFormatter.Label = e.VertexFormatter.Label + bv.Index + " ";
         }
 
+        /// <summary>
+        /// Finds and returns the root of the tree
+        /// </summary>
+        /// <returns>The TreeVertex that is the root of the tree</returns>
+        public TreeVertex getRoot()
+        {
+            var roots = new List<TreeVertex>();
+            foreach (TreeVertex tv in Vertices)
+                if (tv.parent == null)
+                    roots.Add(tv);
+            if (roots.Count != 1)
+                throw new Exception("Error finding root");
+            return roots[0];
+        }
+
     }
 
 }
