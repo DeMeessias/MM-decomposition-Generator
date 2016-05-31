@@ -138,13 +138,15 @@ namespace MMDecompositionGenerator.Data_Structures
                     decomposition = _fromGraphTopDown(g, h);
                     break;
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException("Heuristic not implemented");
             }
             //Improve the tree with a metaheuristic using the given neighborhood operator
             switch (op)
             {
                 case NeighborhoodOperator.uncleSwap:
                     break;
+                default:
+                    throw new NotImplementedException("Neighborhood operator not implemented");
             }
             //If the graph was preprocessed, re-add the removed vertices.
             if (preprocess)
@@ -432,10 +434,11 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <summary>
         /// Applies the chosen neighborhood operator to a tree
         /// </summary>
+        /// <param name="g">The graph we are decomposing</param>
         /// <param name="t">The tree we want to get a neighbor from</param>
         /// <param name="op">The neighborhood operator</param>
         /// <returns>A neighbor solution of t</returns>
-        private static Tree getNeighbor(Tree t, NeighborhoodOperator op)
+        private static Tree getNeighbor(Graph g, Tree t, NeighborhoodOperator op)
         {
             switch (op)
             {
@@ -443,9 +446,9 @@ namespace MMDecompositionGenerator.Data_Structures
                     return _uncleSwap(t);
                     break;
                 case NeighborhoodOperator.Sharmin:
-                    return _SharminNeighbor(t);
+                    return _SharminNeighbor(g,t);
                 default:
-                    throw new NotImplementedException();
+                    throw new NotImplementedException("Neighborhood operator not implemented");
             }
         }
 
@@ -496,13 +499,83 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <summary>
         /// Helper method of getNeighbor. Applies the Sharmin neighborhood operator
         /// </summary>
+        /// <param name="g">The graph we are decomposing</param>
         /// <param name="t">The tree to apply the operator to</param>
         /// <returns>A neighbor solution of t</returns>
-        private static Tree _SharminNeighbor(Tree t)
+        private static Tree _SharminNeighbor(Graph g, Tree t)
         {
             var neighbor = copyExisting(t);
-
+            var root = neighbor.getRoot();
+            _TryToImproveSubtree(g,neighbor,root);
             return neighbor;
+        }
+
+        /// <summary>
+        /// Helper method of _SharminNeighbor. Recursively tries to improve a subtree of the tree decomposition
+        /// </summary>
+        /// <param name="g">The graph we are decomposing</param>
+        /// <param name="t">The tree decomposition</param>
+        /// <param name="r">The root of the subtree we want to improve</param>
+        private static void _TryToImproveSubtree(Graph g, Tree t, TreeVertex r)
+        {
+            if (r.bijectedVertices.Count <= 1)
+                throw new Exception("Only subtrees with more than 1 bijected vertex can be improved");
+            int VG = 100;
+            var alg = new Algorithms.Hopcroft_Karp();
+            List<Vertex> A, B;
+            if (r.children.Count == 0)
+                A = _Split(g, r, alg);
+            else
+            {
+                if (r.children.Count != 2)
+                    throw new Exception("Tree is not binary");
+                A = _RandomSwap(r.children[0], r.children[1]);
+            }
+            B = r.bijectedVertices.Except(A).ToList();
+            //Disconnect all of the old tree vertices that will be replaced
+            for (int i = 0; i < 2; i++)
+            {
+                var v = r.children[0];
+                var Q = new Queue<TreeVertex>();
+                Q.Enqueue(v);
+                while (Q.Count != 0)
+                {
+                    v = Q.Dequeue();
+                    t.DisconnectChild(v.parent, v);
+                    foreach (TreeVertex w in v.children)
+                        Q.Enqueue(w);
+                    t.Vertices.Remove(v);
+                }
+            }
+            if (r.children.Count != 0)
+                throw new Exception("Error trying to improve subtree");
+            //var MMa = alg.GetMatching(BipartiteGraph.FromPartition(g, A));
+            //var MMb = alg.GetMatching(BipartiteGraph.FromPartition(g, B));
+            var va = new TreeVertex();
+            va.bijectedVertices = A;
+            t.Vertices.Add(va);
+            t.ConnectChild(r, va);
+            var vb = new TreeVertex();
+            vb.bijectedVertices = B;
+            t.Vertices.Add(vb);
+            t.ConnectChild(r, vb);
+            if (A.Count > 1)
+                _TryToImproveSubtree(g, t, va);
+            if (B.Count > 1)
+                _TryToImproveSubtree(g, t, vb);
+
+
+        }
+
+        /// <summary>
+        /// Helper method of _TryToImproveSubtree, randomly exchanges some bijected vertices of two tree vertices
+        /// </summary>
+        /// <param name="x">The first treevertex to have its bijected vertices swapped</param>
+        /// <param name="y">The second treevertex to have its bijected vertices swapped</param>
+        /// <returns>The first part of the new partition of the combined bijected vertices made</returns>
+        private static List<Vertex> _RandomSwap(TreeVertex x, TreeVertex y)
+        {
+            throw new NotImplementedException();
         }
     }
 }

@@ -57,5 +57,19 @@ namespace MMDecompositionGenerator.Data_Structures
                 return true;
             else return false;
         }
+
+        /// <summary>
+        /// Gives a Hashcode based on the edges that this edge connects
+        /// </summary>
+        /// <returns>a hashcode</returns>
+        public override int GetHashCode()
+        {
+            int hc = 0;
+            int a = u.Index;
+            int b = v.Index;
+            hc += a * 1000000;
+            hc += b;
+            return hc;
+        }
     }
 }
