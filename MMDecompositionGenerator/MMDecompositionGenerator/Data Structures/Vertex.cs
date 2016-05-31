@@ -1,4 +1,6 @@
-﻿using System;
+﻿//Vertex.cs
+//Defines the vertices used by our graphs.
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,11 +11,11 @@ namespace MMDecompositionGenerator.Data_Structures
     /// <summary>
     /// Represents a vertex in a graph
     /// </summary>
-    class Vertex
+    class Vertex : IEquatable<Vertex>
     {
         int index;
-        List<Edge> incedentEdges;
-        List<Vertex> neighbors;
+        public List<Edge> incedentEdges;
+        public List<Vertex> neighbors;
         
         public int Index { get { return index; } }
 
@@ -28,16 +30,23 @@ namespace MMDecompositionGenerator.Data_Structures
             neighbors = new List<Vertex>();
         }
 
-        public void RemoveConnection(Vertex v)
+        /// <summary>
+        /// Compares this vertex to another vertex
+        /// </summary>
+        /// <param name="other">The vertex to be compared to</param>
+        /// <returns>True if the vertices are the same, fals otherwise</returns>
+        public bool Equals(Vertex other)
         {
-            neighbors.Remove(v);
-            incedentEdges.Remove(new Edge(this, v));
+            return (Index == other.Index);
         }
 
-        public void AddConnection(Vertex v)
+        /// <summary>
+        /// Gives a hashcode for this vertex
+        /// </summary>
+        /// <returns>A hashcode</returns>
+        public override int GetHashCode()
         {
-            neighbors.Add(v);
-            incedentEdges.Add(new Edge(this, v));
+            return index;
         }
     }
 }

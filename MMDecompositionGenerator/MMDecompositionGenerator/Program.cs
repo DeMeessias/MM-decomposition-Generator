@@ -1,21 +1,53 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿//Program.cs
+//Gives the entry point for the application
+
+//#define TRYCATCH //if defined, exceptions that are thrown are displayed, after which the program exits
+using System;
+using System.Windows.Forms;
 
 namespace MMDecompositionGenerator
 {
+    /// <summary>
+    /// Class for holding the main method and defining global variables
+    /// </summary>
     class Program
     {
+        /// <summary>
+        /// The main entry point for the application
+        /// </summary>
+        /// <param name="args">Command line variables</param>
+        [STAThread]
         static void Main(string[] args)
         {
-            Data_Structures.Graph graph;
-            string path = "C:/Users/DeMeessias/Documents/1. Studie/Experimentation project/Graphs/1gcq_graph.dimacs";
-            
-            try {
-                //path = args[0];
-                graph = Data_Structures.Graph.LoadFromDIMACS(path);
+
+
+#if TRYCATCH
+            try
+            {
+#endif
+
+            //path = args[0];
+
+            //Open a file dialog and let the user choose a graph to load
+            string path;
+            var fd = new OpenFileDialog();
+            var ok = fd.ShowDialog();
+            if (ok == DialogResult.OK)
+                path = fd.FileName;
+            else return;
+
+            //Load the graph
+            var graph = Data_Structures.Graph.LoadFromDIMACS(path);
+            Console.WriteLine("Graph loaded from " + path);
+            Console.WriteLine("Graph has " + graph.vertices.Count + " vertices and " + graph.edges.Count + " edges.");
+            //Data_Structures.Graph.DisplayGraph(graph);
+
+            //Generate a tree from the graph
+            var T = Data_Structures.TreeBuilder.fromGraph(graph, Data_Structures.TreeBuilder.Heuristic.bRandomGreedy,Data_Structures.TreeBuilder.NeighborhoodOperator.uncleSwap, true);
+            Console.WriteLine("MM-width of generated tree: " + Algorithms.Hopcroft_Karp.GetMMWidth(graph, T));
+            //T.Display("tree");
+               
+#if TRYCATCH
             }
             catch (Exception e)
             {
@@ -23,8 +55,8 @@ namespace MMDecompositionGenerator
                 Console.ReadLine();
                 return;
             }
-            Console.WriteLine("Graph loaded from " + path);
-            Console.WriteLine("Graph has " + graph.V + " vertices and " + graph.E + " edges.");
+#endif
+            //Pause before exiting
             Console.ReadLine();
         }
     }

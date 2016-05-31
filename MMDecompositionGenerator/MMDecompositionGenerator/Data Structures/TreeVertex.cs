@@ -1,4 +1,6 @@
-﻿using System;
+﻿//TreeVertex.cs
+//Defines the vertices used by the decomposition trees
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,13 +8,34 @@ using System.Threading.Tasks;
 
 namespace MMDecompositionGenerator.Data_Structures
 {
-    class TreeVertex
+    /// <summary>
+    /// Represents a vertex in a tree decomposition of a graph
+    /// </summary>
+    class TreeVertex : IEquatable<TreeVertex>
     {
-        List<TreeEdge> incedentEdges;
-        List<TreeVertex> neighbors;
-        TreeVertex parent;
-        List<TreeVertex> children;
+        public List<TreeEdge> incedentEdges;
+        public List<TreeVertex> neighbors;
+        public TreeVertex parent;
+        public List<TreeVertex> children;
+        public List<Vertex> bijectedVertices;
 
+        //The index of the vertex, used to compare two vertices. Based on the bijected vertices of the orginal graph.
+        public int Index
+        { get {
+                if (bijectedVertices.Count == 1)
+                    return bijectedVertices[0].Index;
+                else
+                { int i = 0;
+                    foreach (Vertex v in bijectedVertices)
+                        i += (int)Math.Pow(v.Index + 100, 2);
+                    return i;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Property returning all vertices that are descendants of this vertex
+        /// </summary>
         public List<TreeVertex> Descendants
         {
             get { var d = new List<TreeVertex>();
@@ -29,41 +52,35 @@ namespace MMDecompositionGenerator.Data_Structures
             }
         }
 
+        /// <summary>
+        /// Constructor initializing the values of a new tree vertex
+        /// </summary>
         public TreeVertex()
         {
             incedentEdges = new List<TreeEdge>();
             neighbors = new List<TreeVertex>();
             parent = null;
             children = new List<TreeVertex>();
+            bijectedVertices = new List<Vertex>();
         }
 
-        public void AddChild(TreeVertex v)
+        /// <summary>
+        /// Compares this vertex to another one
+        /// </summary>
+        /// <param name="other">The other tree vertex</param>
+        /// <returns>True if the vertices have the same index, false otherwise</returns>
+        public bool Equals(TreeVertex other)
         {
-        children.Add(v);
-        neighbors.Add(v);
-        incedentEdges.Add(new TreeEdge(this, v));
+            return Index == other.Index;
         }
 
-        public void RemoveChild(TreeVertex v)
+        /// <summary>
+        /// Returns the index of this vertex as a hashcode
+        /// </summary>
+        /// <returns>The hashcode of this vertex</returns>
+        public override int GetHashCode()
         {
-            children.Remove(v);
-            neighbors.Remove(v);
-            incedentEdges.Remove(new TreeEdge(this, v));
+            return Index;
         }
-
-        public void AddParent(TreeVertex v)
-        {
-            parent = v;
-            neighbors.Add(v);
-            incedentEdges.Add(new TreeEdge(v, this));
-        }
-
-        public void RemoveParent()
-        {
-            neighbors.Remove(parent);
-            incedentEdges.Remove(new TreeEdge(parent, this));
-            parent = null;
-        }
-
     }
 }
