@@ -71,6 +71,7 @@
   <ItemGroup>
     <Compile Include="Algorithms\fastMaximal.cs" />
     <Compile Include="Algorithms\Hopcroft-Karp.cs" />
+    <Compile Include="Algorithms\MatchingAlgorithm.cs" />
     <Compile Include="Data Structures\BipartiteGraph.cs" />
     <Compile Include="Data Structures\Edge.cs" />
     <Compile Include="Data Structures\Graph.cs" />

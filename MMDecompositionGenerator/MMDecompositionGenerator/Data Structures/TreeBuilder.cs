@@ -14,7 +14,7 @@ namespace MMDecompositionGenerator.Data_Structures
         //Possible construction heuristics for building trees
         public enum Heuristic { tSharmin, bAllpairs, bRandomGreedy, bSmallest, bcompletelyRandom, lbRandom, lbGreedy }
         //Possible neighborhood operators for improving a tree using Local Search
-        public enum NeighborhoodOperator { nephewSwap, uncleSwap, Sharmin }
+        public enum NeighborhoodOperator { cousinSwap, uncleSwap, Sharmin, twoswap }
 
         /// <summary>
         /// Makes a copy of an existing tree
@@ -144,6 +144,8 @@ namespace MMDecompositionGenerator.Data_Structures
             switch (op)
             {
                 case NeighborhoodOperator.uncleSwap:
+                    break;
+                case NeighborhoodOperator.Sharmin:
                     break;
                 default:
                     throw new NotImplementedException("Neighborhood operator not implemented");
@@ -375,7 +377,7 @@ namespace MMDecompositionGenerator.Data_Structures
             var bestpart = new List<Vertex>();
             var part = new List<Vertex>();
             var r = new Random();
-            //Unless the splitvertex is the root, we add 1/3 of the bijected vertices to the partition at random
+            //Unless the splitvertex is the root, we add 1/2 of the bijected vertices to the partition at random
             if (splitvert.bijectedVertices.Count != g.vertices.Count)
             {
                 while (part.Count < Math.Ceiling(((float)splitvert.bijectedVertices.Count) / 2))
@@ -383,7 +385,7 @@ namespace MMDecompositionGenerator.Data_Structures
                     var leftoververts = splitvert.bijectedVertices.Except(part).ToList();
                     int rn = r.Next(leftoververts.Count);
                     part.Add(leftoververts[rn]);
-                    if (part.Count >= Math.Ceiling(((float)splitvert.bijectedVertices.Count) / 3))
+                    if (part.Count >= Math.Ceiling(((float)splitvert.bijectedVertices.Count) / 3) && (splitvert.bijectedVertices.Count - part.Count) >= Math.Ceiling(((float)splitvert.bijectedVertices.Count) / 3))
                     {
                         leftoververts.Remove(leftoververts[rn]);
                         var bgraph = BipartiteGraph.FromPartition(g, part);
@@ -420,7 +422,7 @@ namespace MMDecompositionGenerator.Data_Structures
                 if (topv == null)
                     throw new Exception("Error Splitting tree vertex");
                 part.Add(topv);
-                if (mmw < bestmmw && part.Count >= Math.Ceiling(((float)splitvert.bijectedVertices.Count) / 3))
+                if (mmw < bestmmw && part.Count >= Math.Ceiling(((float)splitvert.bijectedVertices.Count) / 3) && (splitvert.bijectedVertices.Count - part.Count ) >= Math.Ceiling(((float)splitvert.bijectedVertices.Count)/3))
                 {
                     bestmmw = mmw;
                     bestpart = new List<Vertex>().Union(part).ToList();
@@ -438,18 +440,80 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <param name="t">The tree we want to get a neighbor from</param>
         /// <param name="op">The neighborhood operator</param>
         /// <returns>A neighbor solution of t</returns>
-        private static Tree getNeighbor(Graph g, Tree t, NeighborhoodOperator op)
+        public static Tree getNeighbor(Graph g, Tree t, NeighborhoodOperator op)
         {
             switch (op)
             {
                 case NeighborhoodOperator.uncleSwap:
                     return _uncleSwap(t);
-                    break;
                 case NeighborhoodOperator.Sharmin:
                     return _SharminNeighbor(g,t);
+                case NeighborhoodOperator.twoswap:
+                    return _twoSwap(t);
                 default:
                     throw new NotImplementedException("Neighborhood operator not implemented");
             }
+        }
+
+        /// <summary>
+        /// Applies the chosen neighborhood operator to the tree at each point, and then returns the best neighbor in the neighborhood
+        /// </summary>
+        /// <param name="g">The graph we are decomposing</param>
+        /// <param name="t">The initial solution</param>
+        /// <param name="op">The neighborhood operator</param>
+        /// <returns>The best neighbor solution of t (can actually be worse than t, if t is locally optimal)</returns>
+        public static Tree getBestNeighbor(Graph g, Tree t, NeighborhoodOperator op)
+        {
+            switch (op)
+            {
+                case NeighborhoodOperator.uncleSwap:
+                    return _bestUncleSwap(g, t);
+                default:
+                    throw new NotImplementedException("Neighborhood operator not implemented");
+            }
+        }
+
+        private static Tree _twoSwap(Tree t)
+        {
+            //Get two random tree vertices that are not descendants of each other
+            var neighbor = copyExisting(t);
+            var rand = new Random();
+            int rn1 = 0;
+            int rn2 = 0;
+            while (rn1 == rn2 || neighbor.Vertices[rn1].Descendants.Contains(neighbor.Vertices[rn2]) || neighbor.Vertices[rn2].Descendants.Contains(neighbor.Vertices[rn1]))
+            {
+                rn1 = rand.Next(neighbor.Vertices.Count);
+                rn2 = rand.Next(neighbor.Vertices.Count);
+            }
+            var va = neighbor.Vertices[rn1];
+            var vb = neighbor.Vertices[rn2];
+            //Swap the two vertices
+            var vapar = va.parent;
+            var vbpar = vb.parent;
+            neighbor.DisconnectChild(vapar, va);
+            neighbor.DisconnectChild(vbpar, vb);
+            neighbor.ConnectChild(vapar, vb);
+            neighbor.ConnectChild(vbpar, va);
+            var ancest = vapar;
+            while (ancest != null)
+            {
+                ancest.bijectedVertices = ancest.bijectedVertices.Except(va.bijectedVertices).ToList();
+                ancest = ancest.parent;
+            }
+            ancest = vbpar;
+            while (ancest != null)
+            {
+                ancest.bijectedVertices = ancest.bijectedVertices.Except(vb.bijectedVertices).Union(va.bijectedVertices).ToList();
+                ancest = ancest.parent;
+            }
+            ancest = vapar;
+            while (ancest != null)
+            {
+                ancest.bijectedVertices = ancest.bijectedVertices.Union(vb.bijectedVertices).ToList();
+                ancest = ancest.parent;
+            }
+
+            return neighbor;
         }
 
         /// <summary>
@@ -474,6 +538,34 @@ namespace MMDecompositionGenerator.Data_Structures
                 if (v.parent != null && v.parent.parent != null)
                 {
                     //Swap the found vertex with the other child of its parent's parent.
+                    
+
+                    _swapUncle(neighbor,v);
+                    
+                    return neighbor;
+                }
+            }
+            return neighbor;
+        }
+
+        /// <summary>
+        /// Helper method of getBestNeighbor. Applies the uncleSwap neighborhood operator and gets the best possible neighbor
+        /// </summary>
+        /// <param name="g">The graph we are decomposing</param>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        private static Tree _bestUncleSwap(Graph g, Tree t)
+        {
+            var alg = new Algorithms.Hopcroft_Karp();
+            Tree bestSolution = null;
+            bool improvedsolution = false;
+            int originalMMw = Algorithms.Hopcroft_Karp.GetMMWidth(g, t);
+            int bestMMw = int.MaxValue;
+            foreach (TreeVertex v in t.Vertices)
+            {
+                //Check if the vertex has an uncle
+                if (v.parent != null && v.parent.parent != null)
+                {
                     var dad = v.parent;
                     var granddad = dad.parent;
                     TreeVertex uncle = null;
@@ -484,16 +576,68 @@ namespace MMDecompositionGenerator.Data_Structures
                     }
                     if (uncle == null)
                         throw new Exception("Error during neighbor generation");
-
-                    neighbor.DisconnectChild(granddad, uncle);
-                    neighbor.DisconnectChild(dad, v);
-                    neighbor.ConnectChild(granddad, v);
-                    neighbor.ConnectChild(dad, uncle);
-                    dad.bijectedVertices = dad.bijectedVertices.Except(v.bijectedVertices).Union(uncle.bijectedVertices).ToList();
-                    return neighbor;
+                    //Check if the swap could possibly reduce the total MM-width
+                    var dadgraph = BipartiteGraph.FromPartition(g, dad.bijectedVertices);
+                    var dadMatch = alg.GetMatching(dadgraph);
+                    //If the swap can reduce MM-width, or if there is no good solution yet, check if the swap makes an improvement
+                    if (dadMatch.Count >= originalMMw || !improvedsolution)
+                    {
+                        var duncleverts = dad.bijectedVertices.Except(v.bijectedVertices).Union(uncle.bijectedVertices).ToList();
+                        var dunclegraph = BipartiteGraph.FromPartition(g, duncleverts);
+                        var duncleMatch = alg.GetMatching(dunclegraph);
+                        //Check if the swap would improve this part of the tree
+                        if (duncleMatch.Count < dadMatch.Count || !improvedsolution)
+                        {
+                            var neighbor = copyExisting(t);
+                            var foo = new List<TreeVertex>();
+                            foo.Add(v);
+                            var bar = neighbor.Vertices.Intersect(foo).ToList();
+                            if (bar.Count != 1)
+                                throw new Exception("Error generating neighbor");
+                            _swapUncle(neighbor, bar[0]);
+                            int neighborMMw = Algorithms.Hopcroft_Karp.GetMMWidth(g, neighbor);
+                            if (neighborMMw < bestMMw)
+                            {
+                                if (neighborMMw <= originalMMw)
+                                improvedsolution = true;
+                                bestSolution = neighbor;
+                                bestMMw = neighborMMw;
+                            }
+                        }
+                    }
                 }
+               
             }
-            return neighbor;
+            if (bestSolution == null)
+                throw new Exception("Error finding a neighbor");
+            return bestSolution;
+        }
+        
+        /// <summary>
+        /// Helper method of _uncleSwap and _bestUncleSwap. Swaps a tree vertex with its "uncle".
+        /// </summary>
+        /// <param name="t">The tree</param>
+        /// <param name="granddad">The parent of the parent of the vertex</param>
+        /// <param name="dad">The parent of the vertex</param>
+        /// <param name="v">The vertex to swap</param>
+        /// <param name="uncle">The other vertex to swap</param>
+        private static void _swapUncle(Tree t, TreeVertex v)
+        {
+            var dad = v.parent;
+            var granddad = dad.parent;
+            TreeVertex uncle = null;
+            foreach (TreeVertex tv in granddad.children)
+            {
+                if (tv != dad)
+                    uncle = tv;
+            }
+            if (uncle == null)
+                throw new Exception("Error during neighbor generation");
+            t.DisconnectChild(granddad, uncle);
+            t.DisconnectChild(dad, v);
+            t.ConnectChild(granddad, v);
+            t.ConnectChild(dad, uncle);
+            dad.bijectedVertices = dad.bijectedVertices.Except(v.bijectedVertices).Union(uncle.bijectedVertices).ToList();
         }
 
         /// <summary>
@@ -520,7 +664,6 @@ namespace MMDecompositionGenerator.Data_Structures
         {
             if (r.bijectedVertices.Count <= 1)
                 throw new Exception("Only subtrees with more than 1 bijected vertex can be improved");
-            int VG = 100;
             var alg = new Algorithms.Hopcroft_Karp();
             List<Vertex> A, B;
             if (r.children.Count == 0)
@@ -533,18 +676,21 @@ namespace MMDecompositionGenerator.Data_Structures
             }
             B = r.bijectedVertices.Except(A).ToList();
             //Disconnect all of the old tree vertices that will be replaced
-            for (int i = 0; i < 2; i++)
+            if (r.children.Count != 0)
             {
-                var v = r.children[0];
-                var Q = new Queue<TreeVertex>();
-                Q.Enqueue(v);
-                while (Q.Count != 0)
+                for (int i = 0; i < 2; i++)
                 {
-                    v = Q.Dequeue();
-                    t.DisconnectChild(v.parent, v);
-                    foreach (TreeVertex w in v.children)
-                        Q.Enqueue(w);
-                    t.Vertices.Remove(v);
+                    var v = r.children[0];
+                    var Q = new Queue<TreeVertex>();
+                    Q.Enqueue(v);
+                    while (Q.Count != 0)
+                    {
+                        v = Q.Dequeue();
+                        t.DisconnectChild(v.parent, v);
+                        foreach (TreeVertex w in v.children)
+                            Q.Enqueue(w);
+                        t.Vertices.Remove(v);
+                    }
                 }
             }
             if (r.children.Count != 0)
@@ -573,9 +719,118 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <param name="x">The first treevertex to have its bijected vertices swapped</param>
         /// <param name="y">The second treevertex to have its bijected vertices swapped</param>
         /// <returns>The first part of the new partition of the combined bijected vertices made</returns>
-        private static List<Vertex> _RandomSwap(TreeVertex x, TreeVertex y)
+        private static List<Vertex> _RandomSwap(TreeVertex y, TreeVertex z)
         {
-            throw new NotImplementedException();
+            var A = new List<Vertex>();
+            var Py = new List<Vertex>();
+            Py.AddRange(y.bijectedVertices);
+            var Pz = new List<Vertex>();
+            Pz.AddRange(z.bijectedVertices);
+            var rand = new Random();
+            int i = rand.Next(Py.Count - (y.parent.bijectedVertices.Count / 3));
+            int j = rand.Next(Pz.Count - (z.parent.bijectedVertices.Count / 3));
+            var Mi = new List<Vertex>();
+            var Mj = new List<Vertex>();
+            for (int k = 0; k < i; k++)
+            {
+                int rn = rand.Next(Py.Count);
+                Mi.Add(Py[rn]);
+                Py.RemoveAt(rn);
+            }
+            for (int k = 0; k < j; k++)
+            {
+                int rn = rand.Next(Pz.Count);
+                Mj.Add(Pz[rn]);
+                Pz.RemoveAt(rn);
+            }
+            if (Mi.Count != i || Mj.Count != j || Py.Count != y.bijectedVertices.Count - i || Pz.Count != z.bijectedVertices.Count - j)
+                throw new Exception("Error performing randomswap");
+            A = y.bijectedVertices.Except(Mi).Union(Mj).ToList();
+            return A;
+        }
+
+        /// <summary>
+        /// Uses simulated annealing to try and improve a tree decomposition
+        /// </summary>
+        /// <param name="g">The graph the tree is a decomposition of</param>
+        /// <param name="T">Our initial solution</param>
+        /// <param name="op">The neighborhood operator</param>
+        /// <param name="startTemperature">The starting temperature</param>
+        /// <param name="decreaseIterations">How many times we should iterate before decreasing the temperature</param>
+        /// <param name="tempMultiplier">Multiplier that determines how fast the temperature decreases, should be between 0 and 1 (exclusive), usually close to 1</param>
+        /// <param name="msToRun">How many milliseconds we should run SA before returning a solution</param>
+        /// <returns>The best tree we have found while running SA</returns>
+        public static Tree SimulatedAnnealing(Graph g, Tree T, NeighborhoodOperator op, float startTemperature, int decreaseIterations, float tempMultiplier, double msToRun)
+        {
+            var starttime = DateTime.Now;
+            var endtime = starttime.AddMilliseconds(msToRun);
+            float temperature = startTemperature;
+            var currentSolution = T;
+            var bestSolution = T;
+            int currMMw = Algorithms.Hopcroft_Karp.GetMMWidth(g, T);
+            int bestMMw = currMMw;
+            var rand = new Random();
+            int iterations = 0;
+            while (DateTime.Now < endtime)
+            {
+                var neighbor = getNeighbor(g, currentSolution, op);
+                int nMMw = Algorithms.Hopcroft_Karp.GetMMWidth(g, neighbor);
+                if (nMMw < bestMMw)
+                {
+                    bestMMw = nMMw;
+                    bestSolution = neighbor;
+                }
+
+                if (nMMw < currMMw)
+                {
+                    currentSolution = neighbor;
+                    currMMw = nMMw;
+                }
+                else
+                {
+                    double p = Math.Exp((currMMw - nMMw) / temperature);
+                    Console.WriteLine(nMMw - currMMw);
+                    Console.WriteLine(p);
+                    var rn = rand.NextDouble();
+                    if (rn < p)
+                    {
+                        currentSolution = neighbor;
+                        currMMw = nMMw;
+                    }
+                }
+                iterations++;
+                if (iterations % decreaseIterations == 0)
+                temperature *= tempMultiplier;
+            }
+            return bestSolution;
+        }
+
+        /// <summary>
+        /// Improves the solution by continually taking the best neighbor until this is no longer an improvement
+        /// </summary>
+        /// <param name="g">the graph we are decomposing</param>
+        /// <param name="T">Our initial solution</param>
+        /// <param name="op">The neighborhood operator</param>
+        /// <param name="msToRun">After how many milliseconds we should time out and return the best solution found so far</param>
+        /// <returns>A solution that is a local optimum with respect to the neighborhood operator</returns>
+        public static Tree IteratedLocalSearch(Graph g, Tree T, NeighborhoodOperator op, double msToRun)
+        {
+            var starttime = DateTime.Now;
+            var endtime = starttime.AddMilliseconds(msToRun);
+            var bMMw = Algorithms.Hopcroft_Karp.GetMMWidth(g,T);
+            var best = T;
+            var neighbor = getBestNeighbor(g, T, op);
+            var nMMw = Algorithms.Hopcroft_Karp.GetMMWidth(g, neighbor);
+            while (nMMw < bMMw && DateTime.Now < endtime)
+            {
+                bMMw = nMMw;
+                best = neighbor;
+                neighbor = getBestNeighbor(g, neighbor, op);
+                nMMw = Algorithms.Hopcroft_Karp.GetMMWidth(g, neighbor);            
+            }
+            if (nMMw < bMMw)
+                return neighbor;
+            else return best;
         }
     }
 }

@@ -10,7 +10,7 @@ namespace MMDecompositionGenerator.Algorithms
     /// <summary>
     /// Class containing methods utilising the Hopcroft-Karp algorithm
     /// </summary>
-    class Hopcroft_Karp
+    class Hopcroft_Karp : IMatchingAlgorithm
     {
         /// <summary>
         /// Gets a (maximum) matching from a bipartite graph

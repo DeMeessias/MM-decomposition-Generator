@@ -8,7 +8,7 @@ namespace MMDecompositionGenerator.Algorithms
     /// <summary>
     /// Class containing methods utilising the fastMaximal algorithm
     /// </summary>
-    class fastMaximal
+    class fastMaximal : IMatchingAlgorithm
     {
         /// <summary>
         /// Gets a (maximal) matching from a Bipartite Graph
