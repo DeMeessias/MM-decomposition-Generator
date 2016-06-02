@@ -1,7 +1,9 @@
 ﻿//fastMaximal.cs
 //Defines an algorithm for quickly getting a maximal (not necessarily maximum) matching in a Bipartite Graph
 
+using System;
 using System.Collections.Generic;
+using MMDecompositionGenerator.Data_Structures;
 
 namespace MMDecompositionGenerator.Algorithms
 {
@@ -34,6 +36,16 @@ namespace MMDecompositionGenerator.Algorithms
                 }
             }
             return M;
+        }
+
+        /// <summary>
+        /// Returns the size of a matching
+        /// </summary>
+        /// <param name="g">The graph we want to know the size of a matching of</param>
+        /// <returns></returns>
+        public int GetMMSize(BipartiteGraph g)
+        {
+            return GetMatching(g).Count;
         }
     }
 }

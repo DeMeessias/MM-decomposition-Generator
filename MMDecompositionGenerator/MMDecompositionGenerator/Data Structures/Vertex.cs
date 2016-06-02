@@ -11,7 +11,7 @@ namespace MMDecompositionGenerator.Data_Structures
     /// <summary>
     /// Represents a vertex in a graph
     /// </summary>
-    class Vertex : IEquatable<Vertex>
+    class Vertex : IEquatable<Vertex>, IComparable<Vertex>
     {
         int index;
         public List<Edge> incedentEdges;
@@ -47,6 +47,16 @@ namespace MMDecompositionGenerator.Data_Structures
         public override int GetHashCode()
         {
             return index;
+        }
+
+        /// <summary>
+        /// Checks if a vertex has a larger or smaller index than another
+        /// </summary>
+        /// <param name="other">The other vertex</param>
+        /// <returns>The relative ordering of the vertices</returns>
+        public int CompareTo(Vertex other)
+        {
+            return index.CompareTo(other.index);
         }
     }
 }

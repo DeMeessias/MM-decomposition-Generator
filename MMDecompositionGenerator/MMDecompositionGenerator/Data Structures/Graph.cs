@@ -63,22 +63,6 @@ namespace MMDecompositionGenerator.Data_Structures
             edges.Add(e);
         }
 
-        /*
-        /// <summary>
-        /// Creates a new graph from a list of vertices and edges
-        /// </summary>
-        /// <param name="vertices">The list of vertices for the new graph</param>
-        /// <param name="edges">The list of edges for the new graph</param>
-        /// <returns>A graph</returns>
-        public static Graph fromVerticesEdges(List<Vertex> vertices, List<Edge> edges)
-        {
-            var g = new Graph();
-            g.vertices = vertices;
-            g.edges = edges;
-            return g;
-        }
-        */
-
         /// <summary>
         /// Loads a graph from a DIMACS file
         /// </summary>

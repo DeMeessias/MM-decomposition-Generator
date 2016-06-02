@@ -12,6 +12,9 @@ namespace MMDecompositionGenerator
     /// </summary>
     class Program
     {
+        //Singleton instance of the Hopcroft_Karp algorithm, so everything uses the same cache
+        public static Algorithms.Hopcroft_Karp HK = new Algorithms.Hopcroft_Karp();
+
         /// <summary>
         /// The main entry point for the application
         /// </summary>
@@ -47,8 +50,8 @@ namespace MMDecompositionGenerator
             Console.WriteLine("MM-width of generated tree: " + Algorithms.Hopcroft_Karp.GetMMWidth(graph, T));
             //T.Display("tree");
             //T = Data_Structures.TreeBuilder.SimulatedAnnealing(graph, T, Data_Structures.TreeBuilder.NeighborhoodOperator.uncleSwap, 100, (int)Math.Ceiling((double)graph.vertices.Count / 30), 0.95f, 100000);
-            T = Data_Structures.TreeBuilder.IteratedLocalSearch(graph, T, Data_Structures.TreeBuilder.NeighborhoodOperator.uncleSwap, 100000);            
-            Console.WriteLine("MM-width of improved tree: " + Algorithms.Hopcroft_Karp.GetMMWidth(graph, T));
+            //T = Data_Structures.TreeBuilder.TimedIteratedLocalSearch(graph, T, Data_Structures.TreeBuilder.NeighborhoodOperator.twoswap, 100000);            
+            //Console.WriteLine("MM-width of improved tree: " + Algorithms.Hopcroft_Karp.GetMMWidth(graph, T));
             T = Data_Structures.TreeBuilder.SimulatedAnnealing(graph, T, Data_Structures.TreeBuilder.NeighborhoodOperator.twoswap, 100, 10, 0.95f, 100000);
             Console.WriteLine("MM-width of improved tree: " + Algorithms.Hopcroft_Karp.GetMMWidth(graph, T));
 #if TRYCATCH

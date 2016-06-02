@@ -206,7 +206,6 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <returns>A tree decomposition of g</returns>
         private static Tree _fromGraphBottomUp(Graph g, Heuristic h)
         {
-            var alg = new Algorithms.Hopcroft_Karp();
             //var alg = new Algorithms.fastMaximal();
             var topVertices = new List<TreeVertex>();
             var decomposition = new Tree();
@@ -240,7 +239,8 @@ namespace MMDecompositionGenerator.Data_Structures
                                 bivertices = bivertices.Union(mv.bijectedVertices).ToList();
                                 bivertices = bivertices.Union(topVertices[i].bijectedVertices).ToList();
                                 var part = BipartiteGraph.FromPartition(g, bivertices);
-                                int mw = alg.GetMatching(part).Count;
+                                var mw = Program.HK.GetMMSize(part);
+                                
                                 if (mw < mmw)
                                 {
                                     ov = topVertices[i];
@@ -266,7 +266,7 @@ namespace MMDecompositionGenerator.Data_Structures
                                 bivertices = bivertices.Union(mv.bijectedVertices).ToList();
                                 bivertices = bivertices.Union(topVertices[i].bijectedVertices).ToList();
                                 var part = BipartiteGraph.FromPartition(g, bivertices);
-                                int mw = alg.GetMatching(part).Count;
+                                int mw = Program.HK.GetMMSize(part);
                                 if (mw < mmw)
                                 {
                                     ov = topVertices[i];
@@ -286,7 +286,7 @@ namespace MMDecompositionGenerator.Data_Structures
                                     bivertices = bivertices.Union(topVertices[i].bijectedVertices).ToList();
                                     bivertices = bivertices.Union(topVertices[j].bijectedVertices).ToList();
                                     var part = BipartiteGraph.FromPartition(g, bivertices);
-                                    int mw = alg.GetMatching(part).Count;
+                                    int mw = Program.HK.GetMMSize(part);
                                     if (mw < mmw)
                                     {
                                         mv = topVertices[i];
@@ -328,7 +328,6 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <returns>A Tree decomposition of g</returns>
         private static Tree _fromGraphTopDown(Graph g, Heuristic h)
         {
-            var alg = new Algorithms.Hopcroft_Karp();
             var decomposition = new Tree();
             var root = new TreeVertex();
             var S = new Stack<TreeVertex>();
@@ -342,7 +341,7 @@ namespace MMDecompositionGenerator.Data_Structures
                 var v = S.Pop();
                 if (v.bijectedVertices.Count > 1)
                 {
-                    var a = _Split(g, v, alg);
+                    var a = _Split(g, v, Program.HK);
                     var b = v.bijectedVertices.Except(a).ToList();
                     var lc = new TreeVertex();
                     var rc = new TreeVertex();
@@ -371,7 +370,7 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <param name="splitvert">The tree vertex to split</param>
         /// <param name="alg">The algorithm used to determine a maximum matching</param>
         /// <returns>A list of bijected vertices in the first part of the best partition found</returns>
-        private static List<Vertex> _Split(Graph g, TreeVertex splitvert, Algorithms.Hopcroft_Karp alg)
+        private static List<Vertex> _Split(Graph g, TreeVertex splitvert, Algorithms.IMatchingAlgorithm alg)
         {
             int bestmmw = int.MaxValue;
             var bestpart = new List<Vertex>();
@@ -390,7 +389,7 @@ namespace MMDecompositionGenerator.Data_Structures
                         leftoververts.Remove(leftoververts[rn]);
                         var bgraph = BipartiteGraph.FromPartition(g, part);
                         var bgraph2 = BipartiteGraph.FromPartition(g, leftoververts);
-                        var foo = Math.Max(alg.GetMatching(bgraph).Count, alg.GetMatching(bgraph2).Count);
+                        var foo = Math.Max(alg.GetMMSize(bgraph), alg.GetMMSize(bgraph2));
                         if (foo < bestmmw)
                         {
                             bestmmw = foo;
@@ -411,7 +410,7 @@ namespace MMDecompositionGenerator.Data_Structures
                     var B = splitvert.bijectedVertices.Except(A).ToList();
                     var bgraph = BipartiteGraph.FromPartition(g, A);
                     var bgraph2 = BipartiteGraph.FromPartition(g, B);
-                    var foo = Math.Max(alg.GetMatching(bgraph).Count, alg.GetMatching(bgraph2).Count);
+                    var foo = Math.Max(alg.GetMMSize(bgraph), alg.GetMMSize(bgraph2));
                     if (foo < mmw)
                     {
                         mmw = foo;
@@ -473,6 +472,11 @@ namespace MMDecompositionGenerator.Data_Structures
             }
         }
 
+        /// <summary>
+        /// Helper method of getNeighbor, applies the twoswap neighborhood operator
+        /// </summary>
+        /// <param name="t">The tree we want a neighbor from</param>
+        /// <returns>A neighbor solution of t</returns>
         private static Tree _twoSwap(Tree t)
         {
             //Get two random tree vertices that are not descendants of each other
@@ -556,7 +560,6 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <returns></returns>
         private static Tree _bestUncleSwap(Graph g, Tree t)
         {
-            var alg = new Algorithms.Hopcroft_Karp();
             Tree bestSolution = null;
             bool improvedsolution = false;
             int originalMMw = Algorithms.Hopcroft_Karp.GetMMWidth(g, t);
@@ -578,15 +581,15 @@ namespace MMDecompositionGenerator.Data_Structures
                         throw new Exception("Error during neighbor generation");
                     //Check if the swap could possibly reduce the total MM-width
                     var dadgraph = BipartiteGraph.FromPartition(g, dad.bijectedVertices);
-                    var dadMatch = alg.GetMatching(dadgraph);
+                    var dadMatchCount = Program.HK.GetMMSize(dadgraph);
                     //If the swap can reduce MM-width, or if there is no good solution yet, check if the swap makes an improvement
-                    if (dadMatch.Count >= originalMMw || !improvedsolution)
+                    if (dadMatchCount >= originalMMw || !improvedsolution)
                     {
                         var duncleverts = dad.bijectedVertices.Except(v.bijectedVertices).Union(uncle.bijectedVertices).ToList();
                         var dunclegraph = BipartiteGraph.FromPartition(g, duncleverts);
-                        var duncleMatch = alg.GetMatching(dunclegraph);
+                        var duncleMatchCount = Program.HK.GetMMSize(dunclegraph);
                         //Check if the swap would improve this part of the tree
-                        if (duncleMatch.Count < dadMatch.Count || !improvedsolution)
+                        if (duncleMatchCount < dadMatchCount || !improvedsolution)
                         {
                             var neighbor = copyExisting(t);
                             var foo = new List<TreeVertex>();
@@ -664,10 +667,9 @@ namespace MMDecompositionGenerator.Data_Structures
         {
             if (r.bijectedVertices.Count <= 1)
                 throw new Exception("Only subtrees with more than 1 bijected vertex can be improved");
-            var alg = new Algorithms.Hopcroft_Karp();
             List<Vertex> A, B;
             if (r.children.Count == 0)
-                A = _Split(g, r, alg);
+                A = _Split(g, r, Program.HK);
             else
             {
                 if (r.children.Count != 2)
@@ -675,41 +677,41 @@ namespace MMDecompositionGenerator.Data_Structures
                 A = _RandomSwap(r.children[0], r.children[1]);
             }
             B = r.bijectedVertices.Except(A).ToList();
-            //Disconnect all of the old tree vertices that will be replaced
-            if (r.children.Count != 0)
+            if (Math.Max(Program.HK.GetMMSize(BipartiteGraph.FromPartition(g, A)), Program.HK.GetMMSize(BipartiteGraph.FromPartition(g, B))) < Program.HK.GetMMSize(BipartiteGraph.FromPartition(g, r.bijectedVertices)))
             {
-                for (int i = 0; i < 2; i++)
+                //Disconnect all of the old tree vertices that will be replaced
+                if (r.children.Count != 0)
                 {
-                    var v = r.children[0];
-                    var Q = new Queue<TreeVertex>();
-                    Q.Enqueue(v);
-                    while (Q.Count != 0)
+                    for (int i = 0; i < 2; i++)
                     {
-                        v = Q.Dequeue();
-                        t.DisconnectChild(v.parent, v);
-                        foreach (TreeVertex w in v.children)
-                            Q.Enqueue(w);
-                        t.Vertices.Remove(v);
+                        var v = r.children[0];
+                        var Q = new Queue<TreeVertex>();
+                        Q.Enqueue(v);
+                        while (Q.Count != 0)
+                        {
+                            v = Q.Dequeue();
+                            t.DisconnectChild(v.parent, v);
+                            foreach (TreeVertex w in v.children)
+                                Q.Enqueue(w);
+                            t.Vertices.Remove(v);
+                        }
                     }
                 }
+                if (r.children.Count != 0)
+                    throw new Exception("Error trying to improve subtree");
+                var va = new TreeVertex();
+                va.bijectedVertices = A;
+                t.Vertices.Add(va);
+                t.ConnectChild(r, va);
+                var vb = new TreeVertex();
+                vb.bijectedVertices = B;
+                t.Vertices.Add(vb);
+                t.ConnectChild(r, vb);
+                if (A.Count > 1)
+                    _TryToImproveSubtree(g, t, va);
+                if (B.Count > 1)
+                    _TryToImproveSubtree(g, t, vb);
             }
-            if (r.children.Count != 0)
-                throw new Exception("Error trying to improve subtree");
-            //var MMa = alg.GetMatching(BipartiteGraph.FromPartition(g, A));
-            //var MMb = alg.GetMatching(BipartiteGraph.FromPartition(g, B));
-            var va = new TreeVertex();
-            va.bijectedVertices = A;
-            t.Vertices.Add(va);
-            t.ConnectChild(r, va);
-            var vb = new TreeVertex();
-            vb.bijectedVertices = B;
-            t.Vertices.Add(vb);
-            t.ConnectChild(r, vb);
-            if (A.Count > 1)
-                _TryToImproveSubtree(g, t, va);
-            if (B.Count > 1)
-                _TryToImproveSubtree(g, t, vb);
-
 
         }
 
@@ -813,7 +815,7 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <param name="op">The neighborhood operator</param>
         /// <param name="msToRun">After how many milliseconds we should time out and return the best solution found so far</param>
         /// <returns>A solution that is a local optimum with respect to the neighborhood operator</returns>
-        public static Tree IteratedLocalSearch(Graph g, Tree T, NeighborhoodOperator op, double msToRun)
+        public static Tree ConvergingIteratedLocalSearch(Graph g, Tree T, NeighborhoodOperator op, double msToRun)
         {
             var starttime = DateTime.Now;
             var endtime = starttime.AddMilliseconds(msToRun);
@@ -831,6 +833,45 @@ namespace MMDecompositionGenerator.Data_Structures
             if (nMMw < bMMw)
                 return neighbor;
             else return best;
+        }
+
+        /// <summary>
+        /// Tries to iteratively improve the solution via LS until it has run for a specified time
+        /// </summary>
+        /// <param name="g">The graph we are decomposing</param>
+        /// <param name="T">Our initial solution</param>
+        /// <param name="op">The neighborhood operator</param>
+        /// <param name="msToRun">How long we want to keep searching</param>
+        /// <returns></returns>
+        public static Tree TimedIteratedLocalSearch(Graph g, Tree T, NeighborhoodOperator op, double msToRun)
+        {
+            var starttime = DateTime.Now;
+            var endtime = starttime.AddMilliseconds(msToRun);
+            var bestSolution = T;
+            int bMMw = Algorithms.Hopcroft_Karp.GetMMWidth(g, T);
+            while (DateTime.Now < endtime)
+            {
+                var neighbor = getNeighbor(g, bestSolution, op);
+                var nMMw = Algorithms.Hopcroft_Karp.GetMMWidth(g, neighbor);
+                if (nMMw < bMMw)
+                {
+                    bMMw = nMMw;
+                    bestSolution = neighbor;
+                }
+            }
+            return bestSolution;
+        }
+
+        public static Tree SharminOptimization(Graph g, Tree T, double msToRun)
+        {
+            var starttime = DateTime.Now;
+            var endtime = starttime.AddMilliseconds(msToRun);
+            while (DateTime.Now < endtime)
+            {
+                var root = T.getRoot();
+                _TryToImproveSubtree(g, T, root);
+                    }
+            return T;
         }
     }
 }

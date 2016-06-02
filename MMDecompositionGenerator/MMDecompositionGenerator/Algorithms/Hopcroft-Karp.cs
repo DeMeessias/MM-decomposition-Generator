@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using MMDecompositionGenerator.Data_Structures;
 
 namespace MMDecompositionGenerator.Algorithms
 {
@@ -12,12 +13,19 @@ namespace MMDecompositionGenerator.Algorithms
     /// </summary>
     class Hopcroft_Karp : IMatchingAlgorithm
     {
+        private Dictionary<List<Vertex>, int> cache;
+
+        public Hopcroft_Karp()
+        {
+            cache = new Dictionary<List<Vertex>, int>(new PartComparer());
+        }
+
         /// <summary>
         /// Gets a (maximum) matching from a bipartite graph
         /// </summary>
         /// <param name="g">The biparite graph we want to get a matching for</param>
         /// <returns>A list of edges that form a maximum matching</returns>
-        public List<Data_Structures.Edge> GetMatching(Data_Structures.BipartiteGraph g)
+        public List<Edge> GetMatching(BipartiteGraph g)
         {
             //Initialize an empty matching
             var M = new List<Data_Structures.Edge>();
@@ -48,7 +56,7 @@ namespace MMDecompositionGenerator.Algorithms
         /// <param name="M">The matching we have so far</param>
         /// <param name="g">The bipartite graph for which we are getting a matching</param>
         /// <returns>A list of paths</returns>
-        private List<List<Data_Structures.Edge>> _findShortestAugmentingPaths(List<Data_Structures.Edge> M, Data_Structures.BipartiteGraph g)
+        private List<List<Edge>> _findShortestAugmentingPaths(List<Edge> M, BipartiteGraph g)
         {
             var SAP = new List<List<Data_Structures.Edge>>(); //List containing the shortest augmenting paths
             var L0 = new List<Data_Structures.Vertex>().Union(g.A).ToList(); // A list containing all free vertices in A
@@ -203,7 +211,7 @@ namespace MMDecompositionGenerator.Algorithms
         /// <param name="u">The vertex whose children we want</param>
         /// <param name="Ed">The edges of the graph</param>
         /// <returns>A list of child vertices</returns>
-        private List<Data_Structures.Vertex> _LIST(Data_Structures.Vertex u, List<Data_Structures.Edge> Ed)
+        private List<Vertex> _LIST(Vertex u, List<Edge> Ed)
         {
             var LIST = new List<Data_Structures.Vertex>();
             foreach (Data_Structures.Edge e in Ed)
@@ -220,19 +228,36 @@ namespace MMDecompositionGenerator.Algorithms
         /// <param name="g">The graph our tree is based on</param>
         /// <param name="t">The tree for which we want the MM-width</param>
         /// <returns>The MM-width of the tree</returns>
-        public static int GetMMWidth(Data_Structures.Graph g, Data_Structures.Tree t)
+        public static int GetMMWidth(Graph g, Tree t)
         {
-            var alg = new Hopcroft_Karp();
             int MMwidth = 0;
             //Go over each vertex and find the one that gives the biggest maximum matching
             foreach (Data_Structures.TreeVertex tv in t.Vertices)
             {
                 var bigraph = Data_Structures.BipartiteGraph.FromPartition(g, tv.bijectedVertices);
-                int MMw = alg.GetMatching(bigraph).Count;
+                int MMw = Program.HK.GetMMSize(bigraph);
                 if (MMw > MMwidth)
                     MMwidth = MMw;
             }
             return MMwidth;
+        }
+
+        /// <summary>
+        /// Returns the size of a maximum matching in a bipartite graph
+        /// </summary>
+        /// <param name="g">The bipartite graph</param>
+        /// <returns>The size a maximum matching would have</returns>
+        public int GetMMSize(BipartiteGraph g)
+        {
+            g.A.Sort();
+            //Check the cache first
+            if (cache.ContainsKey(g.A))
+                return cache[g.A];
+
+            var M = GetMatching(g);
+            var listcopy = new List<Vertex>(g.A);
+            cache.Add(listcopy, M.Count);
+            return M.Count;            
         }
     }
 }

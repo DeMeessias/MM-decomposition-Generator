@@ -69,6 +69,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algorithms\PartComparer.cs" />
     <Compile Include="Algorithms\fastMaximal.cs" />
     <Compile Include="Algorithms\Hopcroft-Karp.cs" />
     <Compile Include="Algorithms\MatchingAlgorithm.cs" />
