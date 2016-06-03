@@ -8,6 +8,7 @@ using QuickGraph.Graphviz;
 using System.Drawing;
 using GraphVizWrapper;
 using System.IO;
+using System.Linq;
 
 namespace MMDecompositionGenerator.Data_Structures
 {
@@ -16,6 +17,16 @@ namespace MMDecompositionGenerator.Data_Structures
     /// </summary>
     class Tree
     {
+        private TreeVertex root;
+        public TreeVertex Root
+        {
+            get
+            {
+                if (root == null || root.parent != null)
+                    root = getRoot();
+                return root;
+            }
+        }
         //Lists of edges and vertices
         List<TreeVertex> vertices;
         List<TreeEdge> edges;
@@ -121,7 +132,7 @@ namespace MMDecompositionGenerator.Data_Structures
         /// Finds and returns the root of the tree
         /// </summary>
         /// <returns>The TreeVertex that is the root of the tree</returns>
-        public TreeVertex getRoot()
+        private TreeVertex getRoot()
         {
             var roots = new List<TreeVertex>();
             foreach (TreeVertex tv in Vertices)
@@ -132,6 +143,52 @@ namespace MMDecompositionGenerator.Data_Structures
             return roots[0];
         }
 
+        /// <summary>
+        /// Replaces a part of the tree by the given subtree
+        /// </summary>
+        /// <param name="t">The subtree we want to connect</param>
+        public void AppendSubtree(Tree t)
+        {
+            var subRoot = t.Root;
+            var connectLeaf = findVertex(subRoot.bijectedVertices);
+            if (connectLeaf == null)
+                throw new Exception("Error appending subtree");
+            var connectParent = connectLeaf.parent;
+            foreach (TreeVertex desc in connectLeaf.Descendants)
+            {
+                Vertices.Remove(desc);
+                DisconnectChild(desc.parent, desc);                
+            }
+            foreach (TreeVertex tv in t.Vertices)
+                Vertices.Add(tv);
+            foreach (TreeEdge te in t.Edges)
+                Edges.Add(te);
+            ConnectChild(connectParent, subRoot);
+        }
+
+        /// <summary>
+        /// Finds a vertex in the tree that represents the given partition
+        /// </summary>
+        /// <param name="partition">The partition we want to look for</param>
+        /// <returns>The treevertex representing the parition if it exists, null otherwise</returns>
+        public TreeVertex findVertex(List<Vertex> partition)
+        {
+            partition.Sort();
+            var lv = Root;
+            var pc = new Algorithms.PartComparer();
+            while (true)
+            {
+                var prelv = lv;
+                lv.bijectedVertices.Sort();
+                if (pc.Equals(lv.bijectedVertices, partition))
+                    return lv;
+                foreach (TreeVertex c in lv.children)
+                 if (partition.Except(c.bijectedVertices).ToList().Count == 0)
+                  lv = c;
+                if (lv == prelv)
+                    return null;                         
+            }
+        }
     }
 
 }

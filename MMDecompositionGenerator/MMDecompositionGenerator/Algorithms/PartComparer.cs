@@ -1,5 +1,5 @@
 ﻿//PartComparer.cs
-//Helper class for Hopcroft-Karp's cache. Compares two partitions and sees if they are the same.
+//Helper class for Hopcroft-Karp's and SharminTreeBuilder's caches. Compares two partitions and sees if they are the same.
 using System;
 using System.Collections.Generic;
 using System.Linq;
