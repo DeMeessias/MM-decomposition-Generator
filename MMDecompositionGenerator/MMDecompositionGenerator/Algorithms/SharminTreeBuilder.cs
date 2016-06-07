@@ -22,7 +22,7 @@ namespace MMDecompositionGenerator.Algorithms
         /// <param name="g">The graph we want to decompose</param>
         /// <param name="h">The construction heuristic we want to use</param>
         /// <returns>A Tree decomposition of g</returns>
-        public Tree ConstructNewTree(Graph g)
+        public Tree ConstructNewTree(Graph g, Algorithms.IMatchingAlgorithm alg)
         {
             var decomposition = new Tree();
             var root = new TreeVertex();
@@ -37,7 +37,7 @@ namespace MMDecompositionGenerator.Algorithms
                 var v = S.Pop();
                 if (v.bijectedVertices.Count > 1)
                 {
-                    var a = _Split(g, v, Program.HK);
+                    var a = _Split(g, v, alg);
                     var b = v.bijectedVertices.Except(a).ToList();
                     var lc = new TreeVertex();
                     var rc = new TreeVertex();
@@ -111,7 +111,7 @@ namespace MMDecompositionGenerator.Algorithms
         /// <param name="T">The initial solution</param>
         /// <param name="msToRun">How many milliseconds we should continue the search</param>
         /// <returns></returns>
-        public Tree Optimize(Graph g, Tree T, double msToRun, bool keepbalanced)
+        public Tree Optimize(Graph g, Tree T, double msToRun, bool keepbalanced, IMatchingAlgorithm alg)
         {
             g.vertices.Sort();
             foreach (TreeVertex v in T.Vertices)
@@ -125,7 +125,7 @@ namespace MMDecompositionGenerator.Algorithms
             while (DateTime.Now < endtime)
             {
                 var root = T.Root;
-                _TryToImproveSubtree(g, T, root, keepbalanced);
+                _TryToImproveSubtree(g, T, root, keepbalanced,alg);
             }
             return Best[g.vertices];
         }
@@ -136,14 +136,14 @@ namespace MMDecompositionGenerator.Algorithms
         /// <param name="g">The graph we are decomposing</param>
         /// <param name="t">The tree decomposition</param>
         /// <param name="r">The root of the subtree we want to improve</param>
-        public void _TryToImproveSubtree(Graph g, Tree t, TreeVertex r, bool keepbalanced)
+        public void _TryToImproveSubtree(Graph g, Tree t, TreeVertex r, bool keepbalanced, IMatchingAlgorithm alg)
         {
             r.bijectedVertices.Sort();
             if (r.bijectedVertices.Count <= 1)
                 throw new Exception("Only subtrees with more than 1 bijected vertex can be improved");
             List<Vertex> A, B;
             if (r.children.Count == 0)
-                A = _Split(g, r, Program.HK);
+                A = _Split(g, r, alg);
             else
             {
                 if (r.children.Count != 2)
@@ -187,11 +187,11 @@ namespace MMDecompositionGenerator.Algorithms
                 if (Best.ContainsKey(A) && Hopcroft_Karp.GetMMWidth(g, Best[A]) < Hopcroft_Karp.GetMMWidth(g, Best[g.vertices]))
                     t.AppendSubtree(TreeBuilder.copyExisting(Best[A]));
                 else if (A.Count > 1)
-                    _TryToImproveSubtree(g, t, va, keepbalanced);
+                    _TryToImproveSubtree(g, t, va, keepbalanced,alg);
                 if (Best.ContainsKey(B) && Hopcroft_Karp.GetMMWidth(g, Best[B]) < Hopcroft_Karp.GetMMWidth(g, Best[g.vertices]))
                     t.AppendSubtree(TreeBuilder.copyExisting(Best[B]));
                 else if (B.Count > 1)
-                    _TryToImproveSubtree(g, t, vb, keepbalanced);
+                    _TryToImproveSubtree(g, t, vb, keepbalanced,alg);
 
                 bool fullsubtree = true;
                 foreach (TreeVertex tv in r.Descendants)

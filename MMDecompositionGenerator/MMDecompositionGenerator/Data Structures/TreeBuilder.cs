@@ -69,7 +69,7 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <param name="op">The neighborhood operator to be used by local search</param>
         /// <param name="preprocess">Whether or not we want to preprocess by removing all isolated and pendant vertices</param>
         /// <returns>A tree decomposition of g</returns>
-        public static Tree fromGraph(Graph g, Heuristic h, NeighborhoodOperator op, bool preprocess)
+        public static Tree fromGraph(Graph g, Heuristic h, NeighborhoodOperator op, bool preprocess, Algorithms.IMatchingAlgorithm alg)
         {
             var removedVertices = new List<Vertex>();
             Tree decomposition;
@@ -136,7 +136,7 @@ namespace MMDecompositionGenerator.Data_Structures
                     break;
                 case Heuristic.tSharmin:
                     var stb = new Algorithms.SharminTreeBuilder();
-                    decomposition = stb.ConstructNewTree(g);
+                    decomposition = stb.ConstructNewTree(g, alg);
                     break;
                 default:
                     throw new NotImplementedException("Heuristic not implemented");
@@ -340,7 +340,7 @@ namespace MMDecompositionGenerator.Data_Structures
                 if (v != root)
                 {
                     var foo = new List<TreeVertex>();
-                    foo.Add(v);
+                    foo.Add(v.parent);
                     var bar = T.Vertices.Intersect(foo).ToList();
                     if (bar.Count != 1)
                         throw new Exception("Error constructing tree");
@@ -359,14 +359,14 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <param name="t">The tree we want to get a neighbor from</param>
         /// <param name="op">The neighborhood operator</param>
         /// <returns>A neighbor solution of t</returns>
-        public static Tree getNeighbor(Graph g, Tree t, NeighborhoodOperator op)
+        public static Tree getNeighbor(Graph g, Tree t, NeighborhoodOperator op, Algorithms.IMatchingAlgorithm alg)
         {
             switch (op)
             {
                 case NeighborhoodOperator.uncleSwap:
                     return _uncleSwap(t);
                 case NeighborhoodOperator.Sharmin:
-                    return _SharminNeighbor(g,t);
+                    return _SharminNeighbor(g,t,alg);
                 case NeighborhoodOperator.twoswap:
                     return _twoSwap(t);
                 default:
@@ -569,12 +569,12 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <param name="g">The graph we are decomposing</param>
         /// <param name="t">The tree to apply the operator to</param>
         /// <returns>A neighbor solution of t</returns>
-        private static Tree _SharminNeighbor(Graph g, Tree t)
+        private static Tree _SharminNeighbor(Graph g, Tree t, Algorithms.IMatchingAlgorithm alg)
         {
             var stb = new Algorithms.SharminTreeBuilder();
             var neighbor = copyExisting(t);
             var root = neighbor.Root;
-            stb._TryToImproveSubtree(g,neighbor,root, false);
+            stb._TryToImproveSubtree(g,neighbor,root, false, alg);
             return neighbor;
         }
 
@@ -589,7 +589,7 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <param name="tempMultiplier">Multiplier that determines how fast the temperature decreases, should be between 0 and 1 (exclusive), usually close to 1</param>
         /// <param name="msToRun">How many milliseconds we should run SA before returning a solution</param>
         /// <returns>The best tree we have found while running SA</returns>
-        public static Tree SimulatedAnnealing(Graph g, Tree T, NeighborhoodOperator op, float startTemperature, int decreaseIterations, float tempMultiplier, double msToRun)
+        public static Tree SimulatedAnnealing(Graph g, Tree T, NeighborhoodOperator op, float startTemperature, int decreaseIterations, float tempMultiplier, double msToRun, Algorithms.IMatchingAlgorithm alg)
         {
             var starttime = DateTime.Now;
             var endtime = starttime.AddMilliseconds(msToRun);
@@ -602,7 +602,7 @@ namespace MMDecompositionGenerator.Data_Structures
             int iterations = 0;
             while (DateTime.Now < endtime)
             {
-                var neighbor = getNeighbor(g, currentSolution, op);
+                var neighbor = getNeighbor(g, currentSolution, op, alg);
                 int nMMw = Algorithms.Hopcroft_Karp.GetMMWidth(g, neighbor);
                 if (nMMw < bestMMw)
                 {
@@ -670,7 +670,7 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <param name="op">The neighborhood operator</param>
         /// <param name="msToRun">How long we want to keep searching</param>
         /// <returns></returns>
-        public static Tree TimedIteratedLocalSearch(Graph g, Tree T, NeighborhoodOperator op, double msToRun)
+        public static Tree TimedIteratedLocalSearch(Graph g, Tree T, NeighborhoodOperator op, double msToRun, Algorithms.IMatchingAlgorithm alg)
         {
             var starttime = DateTime.Now;
             var endtime = starttime.AddMilliseconds(msToRun);
@@ -678,7 +678,7 @@ namespace MMDecompositionGenerator.Data_Structures
             int bMMw = Algorithms.Hopcroft_Karp.GetMMWidth(g, T);
             while (DateTime.Now < endtime)
             {
-                var neighbor = getNeighbor(g, bestSolution, op);
+                var neighbor = getNeighbor(g, bestSolution, op, alg);
                 var nMMw = Algorithms.Hopcroft_Karp.GetMMWidth(g, neighbor);
                 if (nMMw < bMMw)
                 {

@@ -17,6 +17,8 @@ namespace MMDecompositionGenerator.Algorithms
 
         public Hopcroft_Karp()
         {
+            if (Program.HK != null)
+                throw new Exception("Only 1 instance of Hopcroft_Karp allowed. Use Program.HK instead of making a new instance");
             cache = new Dictionary<List<Vertex>, int>(new PartComparer());
         }
 

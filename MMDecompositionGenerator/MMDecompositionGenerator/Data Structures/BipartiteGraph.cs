@@ -48,15 +48,23 @@ namespace MMDecompositionGenerator.Data_Structures
         {
             //Initialize an empty graph
             var newGraph = new BipartiteGraph();
+            var verts = new Dictionary<int, Tuple<bool,Vertex>>();
 
             //Copy the vertices and add them to the correct partition
             foreach (Vertex v in g.vertices)
             {
                 var nv = new Vertex(v.Index);
                 newGraph.vertices.Add(nv);
+
                 if (A.Contains(v))
+                {
                     newGraph.A.Add(nv);
-                else newGraph.B.Add(nv);
+                    verts.Add(nv.Index, new Tuple<bool,Vertex>(true,nv));
+                }
+                else {
+                    newGraph.B.Add(nv);
+                    verts.Add(nv.Index, new Tuple<bool, Vertex>(false, nv));
+                }
             }
             if (newGraph.vertices.Count != g.vertices.Count || newGraph.A.Count + newGraph.B.Count != g.vertices.Count)
                 throw new Exception("Error constructing bipartite graph");
@@ -65,16 +73,19 @@ namespace MMDecompositionGenerator.Data_Structures
             int edges = 0;
             foreach (Edge e in g.edges)
             {
-                if (A.Contains(e.u) != A.Contains(e.v))
+                //if (A.Contains(e.u) != A.Contains(e.v))
+                if (verts[e.u.Index].Item1 != verts[e.v.Index].Item1)
                 {
                     edges += 1;
-                    var dummies = new List<Vertex>();
-                    dummies.Add(e.u);
-                    dummies.Add(e.v);
-                    var connectverts = newGraph.vertices.Intersect(dummies).ToList();
-                    if (connectverts.Count != 2 || (connectverts[0].Index != e.u.Index && connectverts[0].Index != e.v.Index) || (connectverts[1].Index != e.v.Index && connectverts[1].Index != e.u.Index) || connectverts[0].Index == connectverts[1].Index)
-                        throw new Exception("Error constructing bipartite graph");
-                    newGraph.ConnectVertices(connectverts[0], connectverts[1]);
+
+                    //var dummies = new List<Vertex>();
+                    //dummies.Add(e.u);
+                    //dummies.Add(e.v);
+                    //var connectverts = newGraph.vertices.Intersect(dummies).ToList();
+                    //if (connectverts.Count != 2 || (connectverts[0].Index != e.u.Index && connectverts[0].Index != e.v.Index) || (connectverts[1].Index != e.v.Index && connectverts[1].Index != e.u.Index) || connectverts[0].Index == connectverts[1].Index)
+                    //    throw new Exception("Error constructing bipartite graph");
+                    //newGraph.ConnectVertices(connectverts[0], connectverts[1]);
+                    newGraph.ConnectVertices(verts[e.u.Index].Item2, verts[e.v.Index].Item2);
                 }
             }
             if (edges != newGraph.edges.Count || newGraph.edges.Count > g.edges.Count)

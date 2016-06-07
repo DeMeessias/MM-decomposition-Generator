@@ -48,9 +48,10 @@ namespace MMDecompositionGenerator
             //Generate a tree from the graph
             var stb = new Algorithms.SharminTreeBuilder();
             //var T = stb.ConstructNewTree(graph);
-            var T = Data_Structures.TreeBuilder.fromGraph(graph, Data_Structures.TreeBuilder.Heuristic.bcompletelyRandom,Data_Structures.TreeBuilder.NeighborhoodOperator.uncleSwap, true);
+            var T = stb.ConstructNewTree(graph, HK);
+            //var T = Data_Structures.TreeBuilder.fromGraph(graph, Data_Structures.TreeBuilder.Heuristic.bcompletelyRandom,Data_Structures.TreeBuilder.NeighborhoodOperator.uncleSwap, true,Program.HK);
             Console.WriteLine("MM-width of generated tree: " + Algorithms.Hopcroft_Karp.GetMMWidth(graph, T));
-            T = stb.Optimize(graph, T, 100000, false);
+            T = stb.Optimize(graph, T, 100000, false, HK);
             //T.Display("tree");
             //T = Data_Structures.TreeBuilder.SimulatedAnnealing(graph, T, Data_Structures.TreeBuilder.NeighborhoodOperator.uncleSwap, 100, (int)Math.Ceiling((double)graph.vertices.Count / 30), 0.95f, 100000);
             //T = Data_Structures.TreeBuilder.TimedIteratedLocalSearch(graph, T, Data_Structures.TreeBuilder.NeighborhoodOperator.twoswap, 100000);            
