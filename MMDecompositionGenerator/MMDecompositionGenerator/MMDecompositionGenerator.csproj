@@ -69,11 +69,17 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Algorithms\Constructors\BottomUp.cs" />
+    <Compile Include="Algorithms\Constructors\IConstructor.cs" />
+    <Compile Include="Algorithms\Optimizers\IOptimizer.cs" />
+    <Compile Include="Algorithms\Optimizers\IteratedLocalSearch.cs" />
     <Compile Include="Algorithms\PartComparer.cs" />
     <Compile Include="Algorithms\fastMaximal.cs" />
     <Compile Include="Algorithms\Hopcroft-Karp.cs" />
-    <Compile Include="Algorithms\MatchingAlgorithm.cs" />
+    <Compile Include="Algorithms\IMatchingAlgorithm.cs" />
+    <Compile Include="Algorithms\Preprocessor.cs" />
     <Compile Include="Algorithms\SharminTreeBuilder.cs" />
+    <Compile Include="Algorithms\Optimizers\SimulatedAnnealing.cs" />
     <Compile Include="Data Structures\BipartiteGraph.cs" />
     <Compile Include="Data Structures\Edge.cs" />
     <Compile Include="Data Structures\Graph.cs" />

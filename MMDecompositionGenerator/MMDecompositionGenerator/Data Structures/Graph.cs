@@ -9,7 +9,6 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
-using System.Linq;
 
 namespace MMDecompositionGenerator.Data_Structures
 {
@@ -19,7 +18,7 @@ namespace MMDecompositionGenerator.Data_Structures
     class Graph
     {
         //Lists of edges and vertices
-        public List<Vertex> vertices;
+        public Dictionary<int,Vertex> vertices;
         public List<Edge> edges;
 
         /// <summary>
@@ -27,8 +26,24 @@ namespace MMDecompositionGenerator.Data_Structures
         /// </summary>
         public Graph()
         {
-            vertices = new List<Vertex>();
+            vertices = new Dictionary<int,Vertex>();
             edges = new List<Edge>();
+        }
+
+        /// <summary>
+        /// Constructs a graph that is a copy of another graph (with unique vertex and edge elements)
+        /// </summary>
+        /// <param name="g">The graph we want to copy</param>
+        public Graph(Graph g)
+        {
+            vertices = new Dictionary<int, Vertex>();
+            edges = new List<Edge>();
+            foreach (Vertex v in g.vertices.Values)
+                vertices.Add(v.Index, new Vertex(v.Index));
+            foreach (Edge e in g.edges)
+            {
+                ConnectVertices(vertices[e.u.Index], vertices[e.v.Index]);
+            }
         }
 
         /// <summary>
@@ -36,7 +51,7 @@ namespace MMDecompositionGenerator.Data_Structures
         /// </summary>
         /// <param name="u">One of the edges to be disconnected</param>
         /// <param name="v">The other edge to be disconnected</param>
-        protected void DisconnectVertices(Vertex u, Vertex v)
+        public void DisconnectVertices(Vertex u, Vertex v)
         {
 
             var e = new Edge(u, v);
@@ -53,7 +68,7 @@ namespace MMDecompositionGenerator.Data_Structures
         /// </summary>
         /// <param name="u">One of the two vertices to be connected</param>
         /// <param name="v">The other vertex to be connected</param>
-        protected virtual void ConnectVertices(Vertex u, Vertex v)
+        public virtual void ConnectVertices(Vertex u, Vertex v)
         {
             var e = new Edge(u, v);
             u.neighbors.Add(v);
@@ -95,7 +110,7 @@ namespace MMDecompositionGenerator.Data_Structures
                 if (line[0] == "n")
                 {
                     var vert = new Vertex(int.Parse(line[1]));
-                    g.vertices.Add(vert);
+                    g.vertices.Add(vert.Index,vert);
                 }
 
                 //Hande an edge specification
@@ -106,18 +121,12 @@ namespace MMDecompositionGenerator.Data_Structures
                         for (int i = 1; i < v + 1; i++)
                         {
                             var vert = new Vertex(i);
-                            g.vertices.Add(vert);
+                            g.vertices.Add(vert.Index,vert);
                         }
 
                     int ui = int.Parse(line[1]);
                     int vi = int.Parse(line[2]);
-                    var dummies = new List<Vertex>();
-                    dummies.Add(new Vertex(ui));
-                    dummies.Add(new Vertex(vi));
-                    var connectverts = g.vertices.Intersect(dummies).ToList();
-                    if (connectverts.Count != 2 || (connectverts[0].Index != ui && connectverts[0].Index != vi) || (connectverts[1].Index != vi&& connectverts[1].Index != ui) || connectverts[0].Index == connectverts[1].Index)
-                        throw new Exception("Vertex index Error");
-                    g.ConnectVertices(connectverts[0], connectverts[1]);
+                    g.ConnectVertices(g.vertices[ui], g.vertices[vi]);
                 }
             }
             if (g.vertices.Count != v || g.edges.Count != e)
@@ -153,7 +162,7 @@ namespace MMDecompositionGenerator.Data_Structures
             var output = wrapper.GenerateGraph(alles, Enums.GraphReturnType.Png);
             var ms = new MemoryStream(output);
             var img = Image.FromStream(ms);
-            img.Save(fileName + "png", System.Drawing.Imaging.ImageFormat.Png);
+            img.Save(fileName + ".png", System.Drawing.Imaging.ImageFormat.Png);
             Console.WriteLine("Graph visualized");
             
         }
@@ -167,6 +176,35 @@ namespace MMDecompositionGenerator.Data_Structures
         {
             Vertex v = e.Vertex;
             e.VertexFormatter.Label = v.Index.ToString();
+        }
+
+        /// <summary>
+        /// Generates a graph that is a grid with the given dimensions
+        /// </summary>
+        /// <param name="n">The length of the graph</param>
+        /// <param name="m">The width of the graph</param>
+        /// <returns>A graph that is a grid of size n x m</returns>
+        public static Graph fromGrid(int n, int m)
+        {
+            if (n >= 1000 || m >= 1000)
+                throw new Exception("Grid is too large");
+            var g = new Graph();
+            //var grid = new List<List<Vertex>>();
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j < m; j++)
+                {
+                    var v = new Vertex(1000 * i + j);
+                    g.vertices.Add(v.Index, v);
+                    if (i != 0)
+                        g.ConnectVertices(g.vertices[1000 * (i - 1) + j], v);
+                    if (j != 0)
+                        g.ConnectVertices(g.vertices[1000 * i + j - 1], v);
+                        
+                }
+            if (g.vertices.Values.Count != n * m || g.edges.Count != n * (m-1) + m * (n-1))
+                throw new Exception("Error constructing grid");
+
+            return g;
         }
     }
 

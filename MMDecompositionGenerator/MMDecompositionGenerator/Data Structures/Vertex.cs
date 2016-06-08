@@ -16,6 +16,7 @@ namespace MMDecompositionGenerator.Data_Structures
         int index;
         public List<Edge> incedentEdges;
         public List<Vertex> neighbors;
+        public int A; //1 if Vertex is in partition A, -1 if it is in B, 0 if it is not in a bipartite graph;
         
         public int Index { get { return index; } }
 
@@ -28,6 +29,7 @@ namespace MMDecompositionGenerator.Data_Structures
             this.index = index;
             incedentEdges = new List<Edge>();
             neighbors = new List<Vertex>();
+            A = 0;
         }
 
         /// <summary>

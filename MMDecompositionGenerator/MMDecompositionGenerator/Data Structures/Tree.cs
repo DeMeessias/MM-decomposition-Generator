@@ -41,7 +41,7 @@ namespace MMDecompositionGenerator.Data_Structures
         public List<TreeEdge> Edges { get { return edges; } }
 
         /// <summary>
-        /// Constructs a new, empty tree object. Ideally only called by methods in the treebuilder class
+        /// Constructs a new, empty tree object. Ideally only called by classes implementing the IConstructor interface
         /// </summary>
         public Tree()
         {

@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace MMDecompositionGenerator.Data_Structures
 {
@@ -26,17 +25,19 @@ namespace MMDecompositionGenerator.Data_Structures
             B = new List<Vertex>();
         }
 
+        /*
         /// <summary>
         /// Connects two vertices, throwing an error if this would violate partitioning constraints
         /// </summary>
         /// <param name="u">One of the two vertices. The parent of v, if applicable</param>
         /// <param name="v">The other of the two vertices, the child of u, if applicable</param>
-        protected override void ConnectVertices(Vertex u, Vertex v)
+        public override void ConnectVertices(Vertex u, Vertex v)
         {
             if (A.Contains(u) == A.Contains(v) || B.Contains(u) == B.Contains(v))
                 throw new Exception("Cannot connect vertices in the same partition");
             base.ConnectVertices(u, v);
         }
+        */
 
         /// <summary>
         /// Generates a bipartite graph by dividing up the vertices of an existing graph and only retaining the edges between the two partitions
@@ -48,22 +49,24 @@ namespace MMDecompositionGenerator.Data_Structures
         {
             //Initialize an empty graph
             var newGraph = new BipartiteGraph();
-            var verts = new Dictionary<int, Tuple<bool,Vertex>>();
+            var verts = new Dictionary<int, Vertex>();
 
             //Copy the vertices and add them to the correct partition
-            foreach (Vertex v in g.vertices)
+            foreach (Vertex v in g.vertices.Values)
             {
                 var nv = new Vertex(v.Index);
-                newGraph.vertices.Add(nv);
+                newGraph.vertices.Add(nv.Index,nv);
 
                 if (A.Contains(v))
                 {
+                    nv.A = 1;
                     newGraph.A.Add(nv);
-                    verts.Add(nv.Index, new Tuple<bool,Vertex>(true,nv));
+                    verts.Add(nv.Index, nv);
                 }
                 else {
+                    nv.A = -1;
                     newGraph.B.Add(nv);
-                    verts.Add(nv.Index, new Tuple<bool, Vertex>(false, nv));
+                    verts.Add(nv.Index, nv);
                 }
             }
             if (newGraph.vertices.Count != g.vertices.Count || newGraph.A.Count + newGraph.B.Count != g.vertices.Count)
@@ -74,7 +77,7 @@ namespace MMDecompositionGenerator.Data_Structures
             foreach (Edge e in g.edges)
             {
                 //if (A.Contains(e.u) != A.Contains(e.v))
-                if (verts[e.u.Index].Item1 != verts[e.v.Index].Item1)
+                if (verts[e.u.Index].A != verts[e.v.Index].A)
                 {
                     edges += 1;
 
@@ -85,7 +88,7 @@ namespace MMDecompositionGenerator.Data_Structures
                     //if (connectverts.Count != 2 || (connectverts[0].Index != e.u.Index && connectverts[0].Index != e.v.Index) || (connectverts[1].Index != e.v.Index && connectverts[1].Index != e.u.Index) || connectverts[0].Index == connectverts[1].Index)
                     //    throw new Exception("Error constructing bipartite graph");
                     //newGraph.ConnectVertices(connectverts[0], connectverts[1]);
-                    newGraph.ConnectVertices(verts[e.u.Index].Item2, verts[e.v.Index].Item2);
+                    newGraph.ConnectVertices(verts[e.u.Index], verts[e.v.Index]);
                 }
             }
             if (edges != newGraph.edges.Count || newGraph.edges.Count > g.edges.Count)
