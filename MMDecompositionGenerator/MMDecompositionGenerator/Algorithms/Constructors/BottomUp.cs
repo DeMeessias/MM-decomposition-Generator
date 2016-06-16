@@ -14,6 +14,29 @@ namespace MMDecompositionGenerator.Algorithms
         ConstructionHeuristic h;
         IMatchingAlgorithm alg;
 
+        public string Name { get { string name = "BU";
+                switch (h)
+                {
+                    case ConstructionHeuristic.bAllpairs:
+                        name += "allPairsGreedy";
+                        break;
+                    case ConstructionHeuristic.bcompletelyRandom:
+                        name += "completelyRandom";
+                        break;
+                    case ConstructionHeuristic.bSmallest:
+                        name += "smallestGreedy";
+                        break;
+                    case ConstructionHeuristic.bRandomGreedy:
+                        name += "randomGreedy";
+                        break;
+                }
+                if (alg is Hopcroft_Karp)
+                    name += "HK";
+                else if (alg is fastMaximal)
+                    name += "fastMax";
+                return name;
+            } }
+
         /// <summary>
         /// Constructor for the BottomUp object
         /// </summary>

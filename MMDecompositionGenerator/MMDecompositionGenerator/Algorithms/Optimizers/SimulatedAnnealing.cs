@@ -2,6 +2,7 @@
 //Implements the simulated annealing metaheuristic
 
 using System;
+using System.Collections.Generic;
 using MMDecompositionGenerator.Data_Structures;
 
 namespace MMDecompositionGenerator.Algorithms
@@ -12,9 +13,22 @@ namespace MMDecompositionGenerator.Algorithms
     class SimulatedAnnealing : IOptimizer
     {
         TreeBuilder.NeighborhoodOperator op;
-        float startTemperature;
+        double startTemperature;
         int decreaseIterations;
         float tempMultiplier;
+
+        public string Name {
+        get {
+                switch (op)
+                {
+                    case TreeBuilder.NeighborhoodOperator.uncleSwap:
+                        return "SAuncle";
+                    case TreeBuilder.NeighborhoodOperator.twoswap:
+                        return "SA2swap";
+                    default:
+                        throw new NotImplementedException();
+                }
+            } }
 
         /// <summary>
         /// Constructor for the instance of the Simulated Annealing algorithm
@@ -23,7 +37,7 @@ namespace MMDecompositionGenerator.Algorithms
         /// <param name="startTemperature">The starting temperature</param>
         /// <param name="decreaseIterations">How many times we should iterate before decreasing the temperature</param>
         /// <param name="tempMultiplier">Multiplier that determines how fast the temperature decreases, should be between 0 and 1 (exclusive), usually close to 1</param>
-        public SimulatedAnnealing(TreeBuilder.NeighborhoodOperator op, float startTemperature, int decreaseIterations, float tempMultiplier)
+        public SimulatedAnnealing(TreeBuilder.NeighborhoodOperator op, double startTemperature, int decreaseIterations, float tempMultiplier)
         {
         this.op = op;
         this.startTemperature = startTemperature;
@@ -43,13 +57,14 @@ namespace MMDecompositionGenerator.Algorithms
         {
             var starttime = DateTime.Now;
             var endtime = starttime.AddMilliseconds(msToRun);
-            float temperature = startTemperature;
+            double temperature = startTemperature;
             var currentSolution = T;
             var bestSolution = T;
             int currFitness = Hopcroft_Karp.GetFitness(g, T);
             int bestFitness = currFitness;
             var rand = new Random();
             int iterations = 0;
+            var difs = new List<int>();
             while (DateTime.Now < endtime)
             {
                 var neighbor = TreeBuilder.getNeighbor(currentSolution, op);
@@ -58,6 +73,7 @@ namespace MMDecompositionGenerator.Algorithms
                 {
                     bestFitness = nFitness;
                     bestSolution = neighbor;
+                    Program.WriteToLog("BS " + bestFitness + " in " + (DateTime.Now - starttime).TotalMilliseconds + " ms (i " + iterations + ")");
                 }
 
                 if (nFitness < currFitness)
@@ -67,6 +83,9 @@ namespace MMDecompositionGenerator.Algorithms
                 }
                 else
                 {
+                    //var dif = currFitness - nFitness;
+                    //if (-1000 < dif && dif < 0)
+                     //   difs.Add(currFitness - nFitness);
                     double p = Math.Exp((currFitness - nFitness) / temperature);
                     //Console.WriteLine(nFitness - currFitness);
                     //Console.WriteLine(p);
@@ -82,9 +101,18 @@ namespace MMDecompositionGenerator.Algorithms
                 {
                     temperature *= tempMultiplier;
                     if (temperature <= 1)
-                        temperature = startTemperature; 
+                    {
+                        temperature = startTemperature;
+                        currentSolution = bestSolution;
+                    }
                 }
             }
+            // var difsavg = 0;
+            ////  foreach (int i in difs)
+            //     difsavg += i;
+            // difsavg /= difs.Count;
+            // Console.WriteLine("Average difs = " + difsavg + ".");
+            Console.WriteLine(iterations);
             return bestSolution;
         }
     }

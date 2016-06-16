@@ -10,6 +10,11 @@ namespace MMDecompositionGenerator.Algorithms
     interface IConstructor
     {
         /// <summary>
+        /// Property returning the name
+        /// </summary>
+        string Name { get;}
+
+        /// <summary>
         /// Method for constructing a tree decomposition from the graph
         /// </summary>
         /// <param name="g">The graph we are decomposing</param>

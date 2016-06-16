@@ -10,6 +10,11 @@ namespace MMDecompositionGenerator.Algorithms
     interface IMatchingAlgorithm
     {
         /// <summary>
+        /// Property returning the name
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
         /// The method that finds a matching
         /// </summary>
         /// <param name="g">The graph we want to find a matching of</param>

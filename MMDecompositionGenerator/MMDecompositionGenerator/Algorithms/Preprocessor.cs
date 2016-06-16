@@ -47,6 +47,7 @@ namespace MMDecompositionGenerator.Algorithms
                 }
             }
             Console.WriteLine("Removed " + removedVertices.Count + " vertices during preprocessing");
+            Program.WriteToLog("PP removed " + removedVertices.Count);
             return g;
         }
 

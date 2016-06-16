@@ -2,6 +2,7 @@
 //Defines the vertices used by the decomposition trees
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,6 +18,7 @@ namespace MMDecompositionGenerator.Data_Structures
         public List<TreeVertex> neighbors;
         public TreeVertex parent;
         public List<TreeVertex> children;
+        public BitArray()
         public List<Vertex> bijectedVertices;
 
         //The index of the vertex, used to compare two vertices. Based on the bijected vertices of the orginal graph.
@@ -27,7 +29,7 @@ namespace MMDecompositionGenerator.Data_Structures
                 else
                 { int i = 0;
                     foreach (Vertex v in bijectedVertices)
-                        i += (int)Math.Pow(v.Index + 100, 2);
+                        i += (int)Math.Pow((19734 * v.Index + 542) % 5016,2);
                     return i;
                 }
             }

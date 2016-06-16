@@ -133,33 +133,101 @@ namespace MMDecompositionGenerator.Data_Structures
                 rn1 = rand.Next(neighbor.Vertices.Count);
                 rn2 = rand.Next(neighbor.Vertices.Count);
             }
+            if (neighbor.Vertices[rn1].Descendants.Contains(neighbor.Vertices[rn2]))
+                throw new Exception();
+            if (neighbor.Vertices[rn2].Descendants.Contains(neighbor.Vertices[rn1]))
+                throw new Exception();
             var va = neighbor.Vertices[rn1];
             var vb = neighbor.Vertices[rn2];
             //Swap the two vertices
             var vapar = va.parent;
             var vbpar = vb.parent;
+            var check = neighbor.Edges.Count;
             neighbor.DisconnectChild(vapar, va);
             neighbor.DisconnectChild(vbpar, vb);
+            if (!(check == neighbor.Edges.Count + 2))
+                throw new Exception();
             neighbor.ConnectChild(vapar, vb);
             neighbor.ConnectChild(vbpar, va);
+            if (!(check == neighbor.Edges.Count))
+                throw new Exception();
+            try
+            {
+                var foo = neighbor.Root;
+                bool correcttree = true;
+                var Q = new Queue<TreeVertex>();
+                Q.Enqueue(foo);
+                while (Q.Count != 0)
+                {
+                    var bar = Q.Dequeue();
+                    if (bar.children.Count != 0 && bar.children.Count != 2)
+                        correcttree = false;
+                    foreach (TreeVertex v in bar.children)
+                    {
+                        if (Q.Contains(v))
+                            correcttree = false;
+                        else
+                            Q.Enqueue(v);
+                    }
+                }
+                if (!correcttree)
+                    throw new Exception();
+            }
+            catch
+            {
+                t.Display("goodtree");
+                neighbor.Display("errortree");
+                Console.WriteLine(va.Index + " " + vb.Index);
+                throw new Exception();
+            };
             var ancest = vapar;
             while (ancest != null)
             {
                 ancest.bijectedVertices = ancest.bijectedVertices.Except(va.bijectedVertices).ToList();
                 ancest = ancest.parent;
             }
-            ancest = vbpar;
-            while (ancest != null)
+            var bancest = vbpar;
+            while (bancest != null)
             {
-                ancest.bijectedVertices = ancest.bijectedVertices.Except(vb.bijectedVertices).Union(va.bijectedVertices).ToList();
-                ancest = ancest.parent;
+                bancest.bijectedVertices = bancest.bijectedVertices.Except(vb.bijectedVertices).Union(va.bijectedVertices).ToList();
+                bancest = bancest.parent;
             }
-            ancest = vapar;
-            while (ancest != null)
+            var cancest = vapar;
+            while (cancest != null)
             {
-                ancest.bijectedVertices = ancest.bijectedVertices.Union(vb.bijectedVertices).ToList();
-                ancest = ancest.parent;
+                cancest.bijectedVertices = cancest.bijectedVertices.Union(vb.bijectedVertices).ToList();
+                cancest = cancest.parent;
             }
+
+            try
+            {
+                var foo = neighbor.Root;
+                bool correcttree = true;
+                var Q = new Queue<TreeVertex>();
+                Q.Enqueue(foo);
+                while (Q.Count != 0)
+                {
+                    var bar = Q.Dequeue();
+                    if (bar.children.Count != 0 && bar.children.Count != 2)
+                        correcttree = false;
+                    foreach (TreeVertex v in bar.children)
+                    {
+                        if (Q.Contains(v))
+                            correcttree = false;
+                        else
+                            Q.Enqueue(v);
+                    }
+                }
+                if (!correcttree)
+                    throw new Exception();
+            }
+            catch
+            {
+                t.Display("goodtree");
+                neighbor.Display("errortree");
+                Console.WriteLine(va.Index + " " + vb.Index);
+                throw new Exception();
+            };
 
             return neighbor;
         }

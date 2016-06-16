@@ -13,10 +13,21 @@ namespace MMDecompositionGenerator.Algorithms
     /// </summary>
     class SharminTreeBuilder : IConstructor, IOptimizer
     {
+        public string Name
+        {
+            get { string name = "";
+                name += "Sharmin";
+                name += alg.Name;
+                if (keepbalanced)
+                    name += "b";
+                else name += "ub";
+                return name;
+            }
+        }
         private Dictionary<List<Vertex>,Tree> Best;
         private List<Vertex> allvertices;
         private IMatchingAlgorithm alg;
-        bool keepbalanced;
+        public bool keepbalanced;
 
         /// <summary>
         /// Constructor for the object
@@ -141,10 +152,19 @@ namespace MMDecompositionGenerator.Algorithms
                     Best[v.bijectedVertices] = TreeBuilder.fromTreeVertex(v);
             }
 
+            int iterations = 0;
+            var best = Hopcroft_Karp.GetMMWidth(g,Best[allvertices]);
             while (DateTime.Now < endtime)
             {
                 var root = T.Root;
                 _TryToImproveSubtree(g, T, root);
+                iterations++;
+                var neww = Hopcroft_Karp.GetMMWidth(g, Best[allvertices]);
+                if (neww < best)
+                {
+                    best = neww;
+                    Program.WriteToLog("BS " + neww + " in " + (DateTime.Now - starttime).TotalMilliseconds + " ms (i " + iterations + ")");                       
+                }
             }
             return Best[allvertices];
         }
@@ -295,6 +315,14 @@ namespace MMDecompositionGenerator.Algorithms
 
             //Return the best partition found among the created partitions
             return bestpart;
+        }
+
+        /// <summary>
+        /// Clears the cache
+        /// </summary>
+        public void ClearCache()
+        {
+            Best.Clear();
         }
     }
 }

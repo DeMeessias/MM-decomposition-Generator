@@ -10,7 +10,21 @@ namespace MMDecompositionGenerator.Algorithms
     /// </summary>
     class IteratedLocalSearch : IOptimizer
     {
+        
         TreeBuilder.NeighborhoodOperator op;
+        public string Name
+        {
+            get { switch (op)
+                {
+                    case TreeBuilder.NeighborhoodOperator.uncleSwap:
+                        return "ILSuncle";
+                    case TreeBuilder.NeighborhoodOperator.twoswap:
+                        return "ILS2swap";
+                    default:
+                        throw new Exception("Heuristic not implemented");
+                   
+                }
+            } }
 
         /// <summary>
         /// Constructor for the ILS algorithm

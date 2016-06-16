@@ -13,6 +13,8 @@ namespace MMDecompositionGenerator.Algorithms
     /// </summary>
     class Hopcroft_Karp : IMatchingAlgorithm
     {
+        public string Name { get { return "HK"; } }
+
         private Dictionary<List<Vertex>, int> cache;
 
         /// <summary>
@@ -299,6 +301,14 @@ namespace MMDecompositionGenerator.Algorithms
                     MMwidth = TVWidth;
             }
             return 10000 * MMwidth + MMtotal;
+        }
+
+        /// <summary>
+        /// Clears the cache
+        /// </summary>
+        public void ClearCache()
+        {
+            cache.Clear();
         }
     }
 }

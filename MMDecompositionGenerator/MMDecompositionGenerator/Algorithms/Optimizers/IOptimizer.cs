@@ -10,6 +10,11 @@ namespace MMDecompositionGenerator.Algorithms
     interface IOptimizer
     {
         /// <summary>
+        /// Property giving the name
+        /// </summary>
+        string Name { get; }
+
+        /// <summary>
         /// The optimizing method
         /// </summary>
         /// <param name="g">The graph we are decomposing</param>

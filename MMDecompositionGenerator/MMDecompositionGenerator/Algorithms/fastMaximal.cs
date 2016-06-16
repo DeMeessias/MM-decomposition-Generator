@@ -11,6 +11,8 @@ namespace MMDecompositionGenerator.Algorithms
     /// </summary>
     class fastMaximal : IMatchingAlgorithm
     {
+        public string Name { get { return "fastMax"; } }
+
         /// <summary>
         /// Gets a (maximal) matching from a Bipartite Graph
         /// </summary>
