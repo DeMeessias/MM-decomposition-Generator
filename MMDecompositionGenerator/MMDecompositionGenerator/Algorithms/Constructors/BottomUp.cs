@@ -1,8 +1,8 @@
 ﻿//BottomUp.cs
 //Implements a number of bottom up construction heuristics
 using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using MMDecompositionGenerator.Data_Structures;
 
 namespace MMDecompositionGenerator.Algorithms
@@ -71,7 +71,7 @@ namespace MMDecompositionGenerator.Algorithms
             foreach (Vertex v in g.vertices.Values)
             {
                 var tv = new TreeVertex();
-                tv.bijectedVertices.Add(v);
+                tv.bijectedVertices[v.BitIndex] = true;
                 decomposition.Vertices.Add(tv);
                 topVertices.Add(tv);
             }
@@ -93,11 +93,9 @@ namespace MMDecompositionGenerator.Algorithms
                         {
                             if (i != rn)
                             {
-                                var bivertices = new List<Vertex>();
-                                bivertices = bivertices.Union(mv.bijectedVertices).ToList();
-                                bivertices = bivertices.Union(topVertices[i].bijectedVertices).ToList();
-                                var part = BipartiteGraph.FromPartition(g, bivertices);
-                                var mw = alg.GetMMSize(part, false);
+                                var bivertices = new BitArray(mv.bijectedVertices);                               
+                                bivertices = bivertices.Or(topVertices[i].bijectedVertices);
+                                var mw = alg.GetMMSize(g,bivertices);
 
                                 if (mw < mmw)
                                 {
@@ -110,21 +108,28 @@ namespace MMDecompositionGenerator.Algorithms
                         break;
                     case ConstructionHeuristic.bSmallest:
                         mv = topVertices[0];
+                        
+                        var mvcount = int.MaxValue;
                         foreach (TreeVertex topv in topVertices)
                         {
-                            if (topv.bijectedVertices.Count < mv.bijectedVertices.Count)
+                            var topvcount = 0;
+                            for (int i = 0; i < topv.bijectedVertices.Count; i++)
+                                if (topv.bijectedVertices[i])
+                                    topvcount++;
+                            if (topvcount < mvcount)
+                            {
                                 mv = topv;
+                                mvcount = topvcount;
+                            }
                         }
                         mmw = int.MaxValue;
                         for (int i = 0; i < topVertices.Count; i++)
                         {
                             if (topVertices[i] != mv)
                             {
-                                var bivertices = new List<Vertex>();
-                                bivertices = bivertices.Union(mv.bijectedVertices).ToList();
-                                bivertices = bivertices.Union(topVertices[i].bijectedVertices).ToList();
-                                var part = BipartiteGraph.FromPartition(g, bivertices);
-                                int mw = alg.GetMMSize(part, false);
+                                var bivertices = new BitArray(mv.bijectedVertices);
+                                bivertices = bivertices.Or(topVertices[i].bijectedVertices);
+                                int mw = alg.GetMMSize(g,bivertices);
                                 if (mw < mmw)
                                 {
                                     ov = topVertices[i];
@@ -140,9 +145,8 @@ namespace MMDecompositionGenerator.Algorithms
                             {
                                 if (i < j)
                                 {
-                                    var bivertices = new List<Vertex>();
-                                    bivertices = bivertices.Union(topVertices[i].bijectedVertices).ToList();
-                                    bivertices = bivertices.Union(topVertices[j].bijectedVertices).ToList();
+                                    var bivertices = new BitArray(topVertices[i].bijectedVertices);
+                                    bivertices = bivertices.Or(topVertices[j].bijectedVertices);
                                     int mw = alg.GetMMSize(g, bivertices);
                                     if (mw < mmw)
                                     {
@@ -172,7 +176,7 @@ namespace MMDecompositionGenerator.Algorithms
                 topVertices.Remove(mv);
                 topVertices.Remove(ov);
                 topVertices.Add(nv);
-                nv.bijectedVertices = mv.bijectedVertices.Union(ov.bijectedVertices).ToList();
+                nv.bijectedVertices = new BitArray(mv.bijectedVertices).Or(ov.bijectedVertices);
             }
             return decomposition;
         }

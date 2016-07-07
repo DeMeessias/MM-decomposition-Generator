@@ -2,10 +2,6 @@
 //Defines the edges used by the decomposition trees.
 using QuickGraph;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace MMDecompositionGenerator.Data_Structures
 {
@@ -65,8 +61,8 @@ namespace MMDecompositionGenerator.Data_Structures
         public override int GetHashCode()
         {
             int hc = 0;
-            int a = u.Index;
-            int b = v.Index;
+            int a = u.GetHashCode();
+            int b = v.GetHashCode();
             hc += a * 1000000;
             hc += b;
             return hc;

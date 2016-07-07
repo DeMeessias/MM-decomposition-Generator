@@ -17,16 +17,18 @@ namespace MMDecompositionGenerator.Data_Structures
         public List<Edge> incedentEdges;
         public List<Vertex> neighbors;
         public int A; //1 if Vertex is in partition A, -1 if it is in B, 0 if it is not in a bipartite graph;
-        
+        int bitindex;
+        public int BitIndex {  get { return bitindex; } }
         public int Index { get { return index; } }
 
         /// <summary>
         /// Creates a new Vertex object with the given index
         /// </summary>
         /// <param name="index">the index of the new vertex</param>
-        public Vertex(int index)
+        public Vertex(int index, int bitindex)
         {
             this.index = index;
+            this.bitindex = bitindex;
             incedentEdges = new List<Edge>();
             neighbors = new List<Vertex>();
             A = 0;

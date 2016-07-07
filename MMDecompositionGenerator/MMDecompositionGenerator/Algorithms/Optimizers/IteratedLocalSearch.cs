@@ -10,8 +10,12 @@ namespace MMDecompositionGenerator.Algorithms
     /// </summary>
     class IteratedLocalSearch : IOptimizer
     {
-        
+
         TreeBuilder.NeighborhoodOperator op;
+
+        /// <summary>
+        /// Property returning the name
+        /// </summary>
         public string Name
         {
             get { switch (op)
@@ -48,6 +52,7 @@ namespace MMDecompositionGenerator.Algorithms
             var endtime = starttime.AddMilliseconds(msToRun);
             var bestSolution = T;
             int bestFitness = Hopcroft_Karp.GetFitness(g, T);
+            int iterations = 0;
             while (DateTime.Now < endtime)
             {
                 var neighbor = TreeBuilder.getNeighbor(bestSolution, op);
@@ -56,7 +61,9 @@ namespace MMDecompositionGenerator.Algorithms
                 {
                     bestFitness = neighborFitness;
                     bestSolution = neighbor;
+                    Program.WriteToLog("BS " + bestFitness + " in " + (DateTime.Now - starttime).TotalMilliseconds + " ms (i " + iterations + ")");
                 }
+                iterations++;
             }
             return bestSolution;
         }

@@ -1,13 +1,14 @@
 ﻿//TreeBuilder.cs
 //Defines the treebuilder class
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace MMDecompositionGenerator.Data_Structures
 {
     /// <summary>
-    /// Used to build tree decompositions that have small MM-width
+    /// Used to build decomposition trees that have small MM-width
     /// </summary>
     class TreeBuilder
     {
@@ -27,8 +28,7 @@ namespace MMDecompositionGenerator.Data_Structures
             foreach (TreeVertex v in t.Vertices)
             {
                 var tv = new TreeVertex();
-                foreach (Vertex bv in v.bijectedVertices)
-                    tv.bijectedVertices.Add(bv);
+                tv.bijectedVertices = new BitArray(v.bijectedVertices);
                 copy.Vertices.Add(tv);
             }
             //Make new edges for the edges in the original tree
@@ -65,13 +65,14 @@ namespace MMDecompositionGenerator.Data_Structures
             {
                 var v = Q.Dequeue();
                 var nv = new TreeVertex();
-                nv.bijectedVertices = v.bijectedVertices;
-                T.Vertices.Add(nv);
+                nv.bijectedVertices = new BitArray(v.bijectedVertices);
+                
                 if (v != root)
                 {
-                    var par = T.findVertex(v.parent.bijectedVertices);
+                    var par = T.findVertex(v.parent.bijectedVertices);               
                     T.ConnectChild(par, nv);
                 }
+                T.Vertices.Add(nv);
                 foreach (TreeVertex c in v.children)
                     Q.Enqueue(c);
             }
@@ -133,10 +134,6 @@ namespace MMDecompositionGenerator.Data_Structures
                 rn1 = rand.Next(neighbor.Vertices.Count);
                 rn2 = rand.Next(neighbor.Vertices.Count);
             }
-            if (neighbor.Vertices[rn1].Descendants.Contains(neighbor.Vertices[rn2]))
-                throw new Exception();
-            if (neighbor.Vertices[rn2].Descendants.Contains(neighbor.Vertices[rn1]))
-                throw new Exception();
             var va = neighbor.Vertices[rn1];
             var vb = neighbor.Vertices[rn2];
             //Swap the two vertices
@@ -149,86 +146,26 @@ namespace MMDecompositionGenerator.Data_Structures
                 throw new Exception();
             neighbor.ConnectChild(vapar, vb);
             neighbor.ConnectChild(vbpar, va);
-            if (!(check == neighbor.Edges.Count))
-                throw new Exception();
-            try
-            {
-                var foo = neighbor.Root;
-                bool correcttree = true;
-                var Q = new Queue<TreeVertex>();
-                Q.Enqueue(foo);
-                while (Q.Count != 0)
-                {
-                    var bar = Q.Dequeue();
-                    if (bar.children.Count != 0 && bar.children.Count != 2)
-                        correcttree = false;
-                    foreach (TreeVertex v in bar.children)
-                    {
-                        if (Q.Contains(v))
-                            correcttree = false;
-                        else
-                            Q.Enqueue(v);
-                    }
-                }
-                if (!correcttree)
-                    throw new Exception();
-            }
-            catch
-            {
-                t.Display("goodtree");
-                neighbor.Display("errortree");
-                Console.WriteLine(va.Index + " " + vb.Index);
-                throw new Exception();
-            };
+                           
             var ancest = vapar;
             while (ancest != null)
             {
-                ancest.bijectedVertices = ancest.bijectedVertices.Except(va.bijectedVertices).ToList();
+                ancest.bijectedVertices = ancest.bijectedVertices.And(new BitArray(va.bijectedVertices).Not());
                 ancest = ancest.parent;
             }
             var bancest = vbpar;
             while (bancest != null)
             {
-                bancest.bijectedVertices = bancest.bijectedVertices.Except(vb.bijectedVertices).Union(va.bijectedVertices).ToList();
+                bancest.bijectedVertices = bancest.bijectedVertices.And(new BitArray(vb.bijectedVertices).Not()).Or(va.bijectedVertices);
                 bancest = bancest.parent;
             }
             var cancest = vapar;
             while (cancest != null)
             {
-                cancest.bijectedVertices = cancest.bijectedVertices.Union(vb.bijectedVertices).ToList();
+                cancest.bijectedVertices = cancest.bijectedVertices.Or(vb.bijectedVertices);
                 cancest = cancest.parent;
             }
-
-            try
-            {
-                var foo = neighbor.Root;
-                bool correcttree = true;
-                var Q = new Queue<TreeVertex>();
-                Q.Enqueue(foo);
-                while (Q.Count != 0)
-                {
-                    var bar = Q.Dequeue();
-                    if (bar.children.Count != 0 && bar.children.Count != 2)
-                        correcttree = false;
-                    foreach (TreeVertex v in bar.children)
-                    {
-                        if (Q.Contains(v))
-                            correcttree = false;
-                        else
-                            Q.Enqueue(v);
-                    }
-                }
-                if (!correcttree)
-                    throw new Exception();
-            }
-            catch
-            {
-                t.Display("goodtree");
-                neighbor.Display("errortree");
-                Console.WriteLine(va.Index + " " + vb.Index);
-                throw new Exception();
-            };
-
+                          
             return neighbor;
         }
 
@@ -293,7 +230,7 @@ namespace MMDecompositionGenerator.Data_Structures
                         throw new Exception("Error during neighbor generation");
                     var dadMatchCount = Program.HK.GetMMSize(g, dad.bijectedVertices);
                     //If the swap can reduce MM-width, or if there is no good solution yet, check if the swap makes an improvement
-                        var duncleverts = dad.bijectedVertices.Except(v.bijectedVertices).Union(uncle.bijectedVertices).ToList();
+                        var duncleverts = new BitArray(dad.bijectedVertices).And(new BitArray(v.bijectedVertices).Not()).Or(uncle.bijectedVertices);
                         var duncleMatchCount = Program.HK.GetMMSize(g,duncleverts);
                         //Check if the swap would improve this part of the tree
                         if (duncleMatchCount < dadMatchCount || !improvedsolution)
@@ -342,26 +279,8 @@ namespace MMDecompositionGenerator.Data_Structures
             t.DisconnectChild(dad, v);
             t.ConnectChild(granddad, v);
             t.ConnectChild(dad, uncle);
-            dad.bijectedVertices = dad.bijectedVertices.Except(v.bijectedVertices).Union(uncle.bijectedVertices).ToList();
+            dad.bijectedVertices = dad.bijectedVertices.And(new BitArray(v.bijectedVertices).Not()).Or(uncle.bijectedVertices);
         }
-
-        /*
-        /// <summary>
-        /// Helper method of getNeighbor. Applies the Sharmin neighborhood operator
-        /// </summary>
-        /// <param name="g">The graph we are decomposing</param>
-        /// <param name="t">The tree to apply the operator to</param>
-        /// <returns>A neighbor solution of t</returns>
-        private static Tree _SharminNeighbor(Graph g, Tree t, Algorithms.IMatchingAlgorithm alg)
-        {
-            var stb = new Algorithms.SharminTreeBuilder();
-            var neighbor = copyExisting(t);
-            var root = neighbor.Root;
-            stb._TryToImproveSubtree(g,neighbor,root, false, alg);
-            return neighbor;
-        }
-        */
-
 
         /// <summary>
         /// Improves the solution by continually taking the best neighbor until this is no longer an improvement

@@ -7,6 +7,7 @@ using QuickGraph.Graphviz;
 using QuickGraph.Graphviz.Dot;
 using System;
 using System.Collections.Generic;
+using System.Collections;
 using System.Drawing;
 using System.IO;
 
@@ -39,7 +40,7 @@ namespace MMDecompositionGenerator.Data_Structures
             vertices = new Dictionary<int, Vertex>();
             edges = new List<Edge>();
             foreach (Vertex v in g.vertices.Values)
-                vertices.Add(v.Index, new Vertex(v.Index));
+                vertices.Add(v.Index, new Vertex(v.Index, v.BitIndex));
             foreach (Edge e in g.edges)
             {
                 ConnectVertices(vertices[e.u.Index], vertices[e.v.Index]);
@@ -89,6 +90,7 @@ namespace MMDecompositionGenerator.Data_Structures
             var g = new Graph();
             var file = new FileStream(path, FileMode.Open);
             var reader = new StreamReader(file);
+            var bitindex = 0;
 
             string str;
             int v = -1;
@@ -109,7 +111,8 @@ namespace MMDecompositionGenerator.Data_Structures
                 //Handle a node specification (not present in every file)
                 if (line[0] == "n")
                 {
-                    var vert = new Vertex(int.Parse(line[1]));
+                    var vert = new Vertex(int.Parse(line[1]), bitindex);
+                    bitindex++;
                     g.vertices.Add(vert.Index,vert);
                 }
 
@@ -120,7 +123,8 @@ namespace MMDecompositionGenerator.Data_Structures
                     if (g.vertices.Count == 0)
                         for (int i = 1; i < v + 1; i++)
                         {
-                            var vert = new Vertex(i);
+                            var vert = new Vertex(i, bitindex);
+                            bitindex++;
                             g.vertices.Add(vert.Index,vert);
                         }
 
@@ -186,14 +190,15 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <returns>A graph that is a grid of size n x m</returns>
         public static Graph fromGrid(int n, int m)
         {
+            int bitindex = 0;
             if (n >= 1000 || m >= 1000)
                 throw new Exception("Grid is too large");
             var g = new Graph();
-            //var grid = new List<List<Vertex>>();
             for (int i = 0; i < n; i++)
                 for (int j = 0; j < m; j++)
                 {
-                    var v = new Vertex(1000 * i + j);
+                    var v = new Vertex(1000 * i + j, bitindex);
+                    bitindex++;
                     g.vertices.Add(v.Index, v);
                     if (i != 0)
                         g.ConnectVertices(g.vertices[1000 * (i - 1) + j], v);
@@ -205,6 +210,22 @@ namespace MMDecompositionGenerator.Data_Structures
                 throw new Exception("Error constructing grid");
 
             return g;
+        }
+
+        /// <summary>
+        /// Gets the vertices of the graph whose bit is true
+        /// </summary>
+        /// <param name="bits">The bitarray representing our partition</param>
+        /// <returns>A list of the vertices</returns>
+        public List<Vertex> getPartitionVertices(BitArray bits)
+        {
+            var verts = new List<Vertex>();
+            foreach (Vertex v in vertices.Values)
+            {
+                if (bits[v.BitIndex])
+                    verts.Add(v);
+            }
+            return verts;
         }
     }
 

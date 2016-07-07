@@ -1,6 +1,7 @@
 ﻿//Preprocessor.cs
 //Algorithm for preprocessing a graph and converting a tree decomposition made from the preprocessed graph to one for the original graph
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using MMDecompositionGenerator.Data_Structures;
@@ -62,27 +63,31 @@ namespace MMDecompositionGenerator.Algorithms
                     var v = removedVertices[i];
                     TreeVertex n = null;
                     var vtv = new TreeVertex();
-                    vtv.bijectedVertices.Add(v);
+                    vtv.bijectedVertices[v.BitIndex] = true;
                     //find the leaf the node should be connected to
                     if (v.neighbors.Count == 1)
                     {
-                    n = decomposition.findVertex(v.neighbors);
-                        //foreach (TreeVertex tv in decomposition.Vertices)
-                        //{
-                        //    if (tv.bijectedVertices.Count == 1 && tv.bijectedVertices.Contains(v.neighbors[0]))
-                        //    { n = tv; }
-                        //}
+                    var vneighbors = new BitArray(vtv.bijectedVertices.Count);
+                    foreach (Vertex vn in v.neighbors)
+                        vneighbors[vn.BitIndex] = true;
+                    n = decomposition.findVertex(vneighbors);
                     }
                     else
                     {
-                        foreach (TreeVertex tv in decomposition.Vertices)
-                            if (tv.bijectedVertices.Count == 1)
-                                n = tv;
+                    foreach (TreeVertex tv in decomposition.Vertices)
+                    {
+                        int tvbijcount = 0;
+                        for (int c = 0; c < tv.bijectedVertices.Count; c++)
+                            if (tv.bijectedVertices[c])
+                                tvbijcount++;
+                        if (tvbijcount == 1)
+                            n = tv;
+                    }
                     }
                     if (n == null)
                         throw new Exception("Could not find where to reinsert vertex");
                     var utv = new TreeVertex();
-                    utv.bijectedVertices = n.bijectedVertices.Union(vtv.bijectedVertices).ToList();
+                    utv.bijectedVertices = new BitArray(n.bijectedVertices).Or(vtv.bijectedVertices);
                     decomposition.Vertices.Add(utv);
                     decomposition.Vertices.Add(vtv);
                     var npar = n.parent;
@@ -93,7 +98,7 @@ namespace MMDecompositionGenerator.Algorithms
                     var p = utv.parent;
                     while (p != null)
                     {
-                        p.bijectedVertices.Add(v);
+                    p.bijectedVertices[v.BitIndex] = true;
                         p = p.parent;
                     }
                 }

@@ -2,6 +2,7 @@
 //Defines our tree class
 //Uses Quickgraph (http://quickgraph.codeplex.com/), GraphViz(http://www.graphviz.org/) and a wrapper for graphviz called GraphViz.NET(https://github.com/JamieDixon/GraphViz-C-Sharp-Wrapper)
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using QuickGraph;
 using QuickGraph.Graphviz;
@@ -124,8 +125,11 @@ namespace MMDecompositionGenerator.Data_Structures
             //Include all bijected vertices on the label
             TreeVertex v = e.Vertex;
             e.VertexFormatter.Label = "";
-            foreach (Vertex bv in v.bijectedVertices)
+            var bijverts = Program.graph.getPartitionVertices(v.bijectedVertices); 
+            foreach (Vertex bv in bijverts)
+            {
                 e.VertexFormatter.Label = e.VertexFormatter.Label + bv.Index + " ";
+            }
         }
 
         /// <summary>
@@ -171,20 +175,25 @@ namespace MMDecompositionGenerator.Data_Structures
         /// </summary>
         /// <param name="partition">The partition we want to look for</param>
         /// <returns>The treevertex representing the parition if it exists, null otherwise</returns>
-        public TreeVertex findVertex(List<Vertex> partition)
+        public TreeVertex findVertex(BitArray partition)
         {
-            partition.Sort();
             var lv = Root;
             var pc = new Algorithms.PartComparer();
             while (true)
             {
                 var prelv = lv;
-                lv.bijectedVertices.Sort();
                 if (pc.Equals(lv.bijectedVertices, partition))
                     return lv;
                 foreach (TreeVertex c in lv.children)
-                 if (partition.Except(c.bijectedVertices).ToList().Count == 0)
-                  lv = c;
+                {
+                    var diff = new BitArray(partition).And(new BitArray(c.bijectedVertices).Not());
+                    bool contains = true;
+                    for (int i = 0; i < diff.Count; i++)
+                        if (diff[i])
+                            contains = false;
+                    if (contains)
+                        lv = c;
+                }
                 if (lv == prelv)
                     return null;                         
             }

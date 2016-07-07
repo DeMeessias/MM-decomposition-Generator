@@ -1,6 +1,7 @@
 ﻿//fastMaximal.cs
 //Defines an algorithm for quickly getting a maximal (not necessarily maximum) matching in a Bipartite Graph
 
+using System.Collections;
 using System.Collections.Generic;
 using MMDecompositionGenerator.Data_Structures;
 
@@ -24,9 +25,9 @@ namespace MMDecompositionGenerator.Algorithms
             var M  = new List<Edge> ();
 
             //Go over all vertices in one of the partitions. If they are unmatched, try to put them in the matching
-            foreach (Vertex v in g.A)
+            foreach (Vertex v in g.vertices.Values)
             {
-                if (v.incedentEdges.Count > 0)
+                if (v.incedentEdges.Count > 0 && g.A[v.BitIndex])
                 {
                     bool matched = false;
                     foreach (Edge e in v.incedentEdges)
@@ -45,7 +46,7 @@ namespace MMDecompositionGenerator.Algorithms
         /// <param name="g">The graph we are partitioning</param>
         /// <param name="A">The partition</param>
         /// <returns>The size of a maximal matching</returns>
-        public int GetMMSize(Graph g, List<Vertex> A)
+        public int GetMMSize(Graph g, BitArray A)
         {
             var part = BipartiteGraph.FromPartition(g, A);
             return GetMMSize(part);

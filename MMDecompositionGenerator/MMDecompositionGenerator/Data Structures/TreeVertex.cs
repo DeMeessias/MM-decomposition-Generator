@@ -3,6 +3,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections;
+using MMDecompositionGenerator.Algorithms;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,22 +19,7 @@ namespace MMDecompositionGenerator.Data_Structures
         public List<TreeVertex> neighbors;
         public TreeVertex parent;
         public List<TreeVertex> children;
-        public BitArray()
-        public List<Vertex> bijectedVertices;
-
-        //The index of the vertex, used to compare two vertices. Based on the bijected vertices of the orginal graph.
-        public int Index
-        { get {
-                if (bijectedVertices.Count == 1)
-                    return bijectedVertices[0].Index;
-                else
-                { int i = 0;
-                    foreach (Vertex v in bijectedVertices)
-                        i += (int)Math.Pow((19734 * v.Index + 542) % 5016,2);
-                    return i;
-                }
-            }
-        }
+        public BitArray bijectedVertices;
 
         /// <summary>
         /// Property returning all vertices that are descendants of this vertex
@@ -63,7 +49,7 @@ namespace MMDecompositionGenerator.Data_Structures
             neighbors = new List<TreeVertex>();
             parent = null;
             children = new List<TreeVertex>();
-            bijectedVertices = new List<Vertex>();
+            bijectedVertices = new BitArray(Program.numverts);
         }
 
         /// <summary>
@@ -73,7 +59,7 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <returns>True if the vertices have the same index, false otherwise</returns>
         public bool Equals(TreeVertex other)
         {
-            return Index == other.Index;
+            return new PartComparer().Equals(bijectedVertices, other.bijectedVertices);
         }
 
         /// <summary>
@@ -82,7 +68,7 @@ namespace MMDecompositionGenerator.Data_Structures
         /// <returns>The hashcode of this vertex</returns>
         public override int GetHashCode()
         {
-            return Index;
+            return new PartComparer().GetHashCode(bijectedVertices);
         }
     }
 }

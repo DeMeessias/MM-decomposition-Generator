@@ -2,6 +2,7 @@
 //Implements the Hopcroft-Karp algorithm (http://www.cs.princeton.edu/courses/archive/spr10/cos423/handouts/algorithmformaximum.pdf) for getting a maximum matching in a bipartite graph
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using MMDecompositionGenerator.Data_Structures;
@@ -13,9 +14,15 @@ namespace MMDecompositionGenerator.Algorithms
     /// </summary>
     class Hopcroft_Karp : IMatchingAlgorithm
     {
+        /// <summary>
+        /// Property returning the name
+        /// </summary>
         public string Name { get { return "HK"; } }
 
-        private Dictionary<List<Vertex>, int> cache;
+        /// <summary>
+        /// Cache that stores the size of a maximum matching for partitions
+        /// </summary>
+        private Dictionary<BitArray, int> cache;
 
         /// <summary>
         /// Constructor of the Hopcroft_Karp object. Should be called only once in the beginning, as this object is a singleton
@@ -24,7 +31,7 @@ namespace MMDecompositionGenerator.Algorithms
         {
             if (Program.HK != null)
                 throw new Exception("Only 1 instance of Hopcroft_Karp allowed. Use Program.HK instead of making a new instance");
-            cache = new Dictionary<List<Vertex>, int>(new PartComparer());
+            cache = new Dictionary<BitArray, int>(new PartComparer());
         }
 
         /// <summary>
@@ -66,9 +73,9 @@ namespace MMDecompositionGenerator.Algorithms
         private List<List<Edge>> _findShortestAugmentingPaths(List<Edge> M, BipartiteGraph g)
         {
             var SAP = new List<List<Edge>>(); //List containing the shortest augmenting paths
-            var L0 = new List<Vertex>().Union(g.A).ToList(); // A list containing all free vertices in A
-            var FG = new List<Vertex>().Union(g.B).ToList(); // "Free Girls", A list containing all free vertices in B
-            
+            var L0 = g.getPartitionVertices(g.A); // A list containing all free vertices in A
+            var FG = g.getPartitionVertices(new BitArray(g.A).Not()); // "Free Girls", A list containing all free vertices in B                                                                     
+
             //Fix the direction of each edge so M-augmenting paths follow directed edges from a free vertex in A to one in B
             foreach (Edge e in g.edges)
             {
@@ -154,8 +161,8 @@ namespace MMDecompositionGenerator.Algorithms
             Ed = Ed.Union(Eb).ToList();
             Ed = Ed.Distinct().ToList(); //Not sure if this step is needed.
             //Add a source and sink
-            var s = new Vertex(-2);
-            var t = new Vertex(-1);
+            var s = new Vertex(-2,-2);
+            var t = new Vertex(-1,-1);
             foreach (Vertex v in Vd)
             {
                 if (L0.Contains(v))
@@ -256,13 +263,12 @@ namespace MMDecompositionGenerator.Algorithms
         /// <returns>The size a maximum matching would have</returns>
         public int GetMMSize(BipartiteGraph g, bool checkcache = true)
         {
-            g.A.Sort();
             //Check the cache first
             if (checkcache && cache.ContainsKey(g.A))
                 return cache[g.A];
 
             var M = GetMatching(g);
-            var listcopy = new List<Vertex>(g.A);
+            var listcopy = new BitArray(g.A);
             cache.Add(listcopy, M.Count);
             return M.Count;            
         }
@@ -273,9 +279,8 @@ namespace MMDecompositionGenerator.Algorithms
         /// <param name="g">The graph our biparite graph is based on</param>
         /// <param name="A"></param>
         /// <returns></returns>
-        public int GetMMSize(Graph g, List<Vertex> A)
+        public int GetMMSize(Graph g, BitArray A)
         {
-            A.Sort();
             if (cache.ContainsKey(A))
                 return cache[A];
             var b = BipartiteGraph.FromPartition(g, A);

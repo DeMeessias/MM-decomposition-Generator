@@ -17,6 +17,9 @@ namespace MMDecompositionGenerator.Algorithms
         int decreaseIterations;
         float tempMultiplier;
 
+        /// <summary>
+        /// Property returning the name
+        /// </summary>
         public string Name {
         get {
                 switch (op)
@@ -83,12 +86,7 @@ namespace MMDecompositionGenerator.Algorithms
                 }
                 else
                 {
-                    //var dif = currFitness - nFitness;
-                    //if (-1000 < dif && dif < 0)
-                     //   difs.Add(currFitness - nFitness);
                     double p = Math.Exp((currFitness - nFitness) / temperature);
-                    //Console.WriteLine(nFitness - currFitness);
-                    //Console.WriteLine(p);
                     var rn = rand.NextDouble();
                     if (rn < p)
                     {
@@ -100,18 +98,13 @@ namespace MMDecompositionGenerator.Algorithms
                 if (iterations % decreaseIterations == 0)
                 {
                     temperature *= tempMultiplier;
-                    if (temperature <= 1)
+                    if (temperature <= 2.17)
                     {
                         temperature = startTemperature;
                         currentSolution = bestSolution;
                     }
                 }
             }
-            // var difsavg = 0;
-            ////  foreach (int i in difs)
-            //     difsavg += i;
-            // difsavg /= difs.Count;
-            // Console.WriteLine("Average difs = " + difsavg + ".");
             Console.WriteLine(iterations);
             return bestSolution;
         }
